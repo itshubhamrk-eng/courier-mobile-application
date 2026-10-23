@@ -20,6 +20,8 @@ class ShipmentSummary {
     this.deliveryBranchId,
     this.manifestId,
     this.flowType,
+    this.receiverContact,
+    this.paymentModeId,
   });
 
   final String id;
@@ -40,6 +42,8 @@ class ShipmentSummary {
   final String? deliveryBranchId;
   final String? manifestId;
   final String? flowType;
+  final String? receiverContact;
+  final String? paymentModeId;
 
   factory ShipmentSummary.fromJson(Map<String, dynamic> j) => ShipmentSummary(
     id: j['id'] as String,
@@ -60,6 +64,8 @@ class ShipmentSummary {
     deliveryBranchId: jStr(j['deliveryBranchId']),
     manifestId: jStr(j['manifestId']),
     flowType: jStr(j['flowType']),
+    receiverContact: jStr(j['receiverContact']),
+    paymentModeId: jStr(j['paymentModeId']),
   );
 }
 

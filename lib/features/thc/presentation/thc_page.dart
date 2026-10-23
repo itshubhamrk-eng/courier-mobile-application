@@ -14,6 +14,7 @@ import '../../loading_sheet/presentation/loading_sheet_detail_page.dart';
 import '../../loading_sheet/presentation/loading_sheets_page.dart';
 import '../../masters/data/masters.dart';
 import '../data/thc_repository.dart';
+import 'staff_picker.dart';
 
 /// Generate THC. Without [manifestId] it first lists the branch's open loading sheets.
 class ThcPage extends ConsumerWidget {
@@ -135,7 +136,7 @@ class _ThcFormState extends ConsumerState<_ThcForm> {
     final picked = await showModalBottomSheet<StaffUser>(
       context: context,
       isScrollControlled: true,
-      builder: (_) => const _DriverSheet(),
+      builder: (_) => const StaffPickerSheet(),
     );
     if (picked != null && picked.id != _driver?.id) {
       setState(() {
@@ -573,84 +574,6 @@ class _AlreadyDispatched extends ConsumerWidget {
       ),
       _ => const LoadingView(),
     };
-  }
-}
-
-class _DriverSheet extends ConsumerStatefulWidget {
-  const _DriverSheet();
-
-  @override
-  ConsumerState<_DriverSheet> createState() => _DriverSheetState();
-}
-
-class _DriverSheetState extends ConsumerState<_DriverSheet> {
-  String _q = '';
-
-  @override
-  Widget build(BuildContext context) {
-    final users = ref.watch(staffUsersProvider);
-    final branchId = ref.watch(sessionProvider)?.operatingBranchId;
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: SizedBox(
-        height: MediaQuery.sizeOf(context).height * 0.7,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: TextField(
-                autofocus: true,
-                onChanged: (v) => setState(() => _q = v.trim().toLowerCase()),
-                decoration: const InputDecoration(
-                  hintText: 'Search driver by name or mobile',
-                  prefixIcon: Icon(Icons.search),
-                ),
-              ),
-            ),
-            Expanded(
-              child: switch (users) {
-                AsyncData(:final value) => () {
-                  final list =
-                      value
-                          .where(
-                            (u) => _q.isEmpty || u.name.toLowerCase().contains(_q) || (u.mobile ?? '').contains(_q),
-                          )
-                          .toList()
-                        // This branch's staff first.
-                        ..sort((a, b) {
-                          final ab = a.branchId == branchId ? 0 : 1;
-                          final bb = b.branchId == branchId ? 0 : 1;
-                          return ab != bb ? ab - bb : a.name.compareTo(b.name);
-                        });
-                  if (list.isEmpty) return const EmptyView(message: 'No matching staff.');
-                  return ListView(
-                    children: [
-                      for (final u in list)
-                        ListTile(
-                          leading: const Icon(Icons.person_outline),
-                          title: Text(u.name),
-                          subtitle: Text([u.mobile, u.designation].nonNulls.join(' · ')),
-                          onTap: () => Navigator.pop(context, u),
-                        ),
-                    ],
-                  );
-                }(),
-                AsyncError(:final error) =>
-                  error is ApiException && error.kind == ApiErrorKind.forbidden
-                      ? const EmptyView(
-                          icon: Icons.lock_outline,
-                          message:
-                              'Your role cannot list drivers.\nAsk your branch manager to generate the THC, '
-                              'or ask an admin for the USER_READ permission.',
-                        )
-                      : ErrorView(error: error, onRetry: () => ref.invalidate(staffUsersProvider)),
-                _ => const LoadingView(),
-              },
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 
