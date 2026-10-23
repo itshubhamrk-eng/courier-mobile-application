@@ -14,6 +14,9 @@ import '../../thc/data/thc_repository.dart';
 import '../../thc/presentation/staff_picker.dart';
 import '../data/drs_repository.dart';
 import 'drs_widgets.dart';
+import '../../../core/scan_code.dart';
+import '../../documents/document_page.dart';
+import '../../documents/document_service.dart';
 
 /// Make a DRS: pick shipments waiting for delivery, assign a delivery partner.
 class NewDrsPage extends ConsumerStatefulWidget {
@@ -68,7 +71,9 @@ class _NewDrsPageState extends ConsumerState<NewDrsPage> {
     final awb = raw.trim();
     _scan.clear();
     if (awb.isEmpty) return;
-    final s = _list.where((x) => x.trackingNumber == awb || x.shipmentNumber == awb).firstOrNull;
+    final s = _list
+        .where((x) => matchesScan(trackingNumber: x.trackingNumber, shipmentNumber: x.shipmentNumber, raw: awb))
+        .firstOrNull;
     if (s == null) {
       showFailure(
         context,
@@ -392,7 +397,7 @@ class _NewDrsPageState extends ConsumerState<NewDrsPage> {
   }
 }
 
-class _ResultPage extends StatelessWidget {
+class _ResultPage extends ConsumerWidget {
   const _ResultPage({required this.result, required this.submitted, required this.partner});
 
   final BulkResult result;
@@ -400,8 +405,9 @@ class _ResultPage extends StatelessWidget {
   final StaffUser partner;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final failed = result.results.where((o) => !o.success).toList();
+    final branchId = ref.watch(sessionProvider)?.operatingBranchId;
     return Scaffold(
       appBar: AppBar(title: const Text('DRS generated'), automaticallyImplyLeading: false),
       body: ListView(
@@ -440,11 +446,27 @@ class _ResultPage extends StatelessWidget {
           const SizedBox(height: 16),
           FilledButton(onPressed: () => context.pop(), child: const Text('Done')),
           const SizedBox(height: 8),
-          const Text(
-            'DRS printing arrives in Phase 7.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-          ),
+          if (result.successCount > 0 && branchId != null)
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+              onPressed: () => openDocument(
+                context,
+                title: 'DRS ${result.drsNumber ?? ''}',
+                fileName: 'drs-${result.drsNumber ?? 'today'}.pdf',
+                build: () => ref
+                    .read(documentServiceProvider)
+                    .drs(
+                      DrsRun(
+                        deliveryUserId: partner.id,
+                        deliveryBranchId: branchId,
+                        runDate: DateTime.now(),
+                        drsNumber: result.drsNumber,
+                      ),
+                    ),
+              ),
+              icon: const Icon(Icons.print_outlined),
+              label: const Text('Print DRS'),
+            ),
         ],
       ),
     );

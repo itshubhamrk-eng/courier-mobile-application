@@ -11,6 +11,8 @@ import '../../../core/widgets/status_badge.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../masters/data/masters.dart';
 import '../data/shipment_repository.dart';
+import '../../documents/document_page.dart';
+import '../../documents/document_service.dart';
 
 class ShipmentDetailPage extends ConsumerWidget {
   const ShipmentDetailPage({super.key, required this.shipmentId});
@@ -27,7 +29,34 @@ class ShipmentDetailPage extends ConsumerWidget {
     final canPod = ref.watch(sessionProvider)?.can(Permissions.deliveryUpload) ?? false;
     final outForDelivery = view.value?.shipment.status == 'OUT_FOR_DELIVERY';
     return Scaffold(
-      appBar: AppBar(title: Text(view.value?.shipment.trackingNumber ?? 'Shipment')),
+      appBar: AppBar(
+        title: Text(view.value?.shipment.trackingNumber ?? 'Shipment'),
+        actions: [
+          if (view.value case final v?)
+            PopupMenuButton<String>(
+              tooltip: 'Print',
+              icon: const Icon(Icons.print_outlined),
+              onSelected: (doc) => doc == 'label'
+                  ? openDocument(
+                      context,
+                      title: 'Labels ${v.shipment.trackingNumber}',
+                      fileName: 'label-${v.shipment.trackingNumber}.pdf',
+                      build: () => ref.read(documentServiceProvider).label(shipmentId),
+                    )
+                  : openDocument(
+                      context,
+                      title: 'POD ${v.shipment.trackingNumber}',
+                      fileName: 'pod-${v.shipment.trackingNumber}.pdf',
+                      build: () => ref.read(documentServiceProvider).pod(shipmentId),
+                    ),
+              itemBuilder: (_) => [
+                const PopupMenuItem(value: 'label', child: Text('Shipment labels')),
+                if (v.shipment.status == 'DELIVERED')
+                  const PopupMenuItem(value: 'pod', child: Text('Proof of delivery')),
+              ],
+            ),
+        ],
+      ),
       floatingActionButton: canPod && outForDelivery
           ? FloatingActionButton.extended(
               onPressed: () async {

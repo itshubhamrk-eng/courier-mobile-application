@@ -1,4 +1,5 @@
 import 'package:branch_ops/core/network/api_client.dart';
+import 'package:branch_ops/core/scan_code.dart';
 import 'package:branch_ops/core/network/api_exception.dart';
 import 'package:branch_ops/features/shipments/data/shipment_models.dart';
 import 'package:branch_ops/features/shipments/data/shipment_repository.dart';
@@ -79,5 +80,23 @@ void main() {
 
     expect(c.lines.map((l) => (l.label, l.amount)), [('Freight', 400), ('Hamali', 30), ('GST', 72), ('Discount', -10)]);
     expect(c.netAmount, 492);
+  });
+
+  test('label package id resolves to its AWB', () async {
+    expect(scanCandidates('AL10041-002'), ['AL10041-002', 'AL10041']);
+    expect(scanCandidates('AL10041'), ['AL10041']);
+    expect(matchesScan(trackingNumber: 'AL10041', shipmentNumber: 'X', raw: 'al10041-001'), isTrue);
+
+    final adapter = FakeAdapter(
+      (r) async => r.path.endsWith('/AL10041')
+          ? (
+              status: 200,
+              body: ok({'id': 's1', 'trackingNumber': 'AL10041', 'shipmentNumber': 'B1', 'status': 'BOOKED'}),
+            )
+          : (status: 404, body: errorBody('not found')),
+    );
+    final s = await repo(adapter).byAwb('AL10041-003');
+    expect(s.trackingNumber, 'AL10041');
+    expect(adapter.requests.map((r) => r.path.split('/').last), ['AL10041-003', 'AL10041']);
   });
 }

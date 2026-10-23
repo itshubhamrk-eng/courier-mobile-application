@@ -63,7 +63,7 @@ same or next day. Each phase ends with your test and sign-off before the next on
 - [x] 2.9 Track screen: AWB search + barcode / QR scan
 - [x] 2.10 Movement timeline (hub, failed, hold, misroute, RTO), POD block when delivered
 - [x] 2.11 Tests: booking happy path, timeout, validation errors, tracking (37 tests)
-- [ ] 2.12 Label print / reprint: moved to Phase 7 (needs the document decision, G1)
+- [x] 2.12 Label print / reprint (Phase 7)
 
 ### Phase 3 — Loading sheet (Nov 3 – Nov 4)
 - [x] 3.1 Loading sheet list: Open / Dispatched / Completed tabs
@@ -73,7 +73,7 @@ same or next day. Each phase ends with your test and sign-off before the next on
 - [x] 3.5 Remove shipment from an open sheet; creating the sheet is the save (no separate finalize step on the server)
 - [x] 3.6 Loading sheet detail, Generate THC button for open sheets
 - [x] 3.7 Tests: eligibility, request shape per mode, create flow with scan (45 tests)
-- [ ] 3.8 Print / share loading sheet: Phase 7 (G1)
+- [x] 3.8 Print / share loading sheet (Phase 7)
 
 ### Phase 4 — THC (Nov 5)
 - [x] 4.1 Pick an open loading sheet (or arrive from the sheet's Generate THC button)
@@ -82,7 +82,7 @@ same or next day. Each phase ends with your test and sign-off before the next on
 - [x] 4.4 Optional driver OTP (as on web), out-scan step when the sheet starts at a hub (server requires it), generate THC
 - [x] 4.5 THC number (= loading sheet number) and details; a dispatched sheet shows its THC instead of a form; lost answer is settled by reading the sheet back
 - [x] 4.6 Tests: generation, hub out-scan, lost answer, already dispatched (50 tests)
-- [ ] 4.7 Print / share THC: Phase 7 (G1)
+- [x] 4.7 Print / share THC (Phase 7)
 
 ### Phase 5 — DRS (Nov 6 – Nov 9)
 - [x] 5.0 Receive incoming THCs (in-scan): scan / tick what arrived, the rest is reported missing (server raises a shortage ticket). Added: without it nothing becomes eligible for DRS
@@ -93,7 +93,7 @@ same or next day. Each phase ends with your test and sign-off before the next on
 - [x] 5.5 Status tabs: all, pending, delivered, not delivered
 - [x] 5.6 Navigate (Google Maps) and call buttons
 - [x] 5.7 Tests: receive with missing, DRS with refusal, run view, request shapes (56 tests)
-- [ ] 5.8 Print DRS: Phase 7 (G1)
+- [x] 5.8 Print DRS (Phase 7)
 
 ### Phase 6 — POD (Nov 10 – Nov 11)
 - [x] 6.1 Pick shipment: scan, search, or POD button on a DRS row / shipment detail; must be OUT_FOR_DELIVERY
@@ -104,14 +104,14 @@ same or next day. Each phase ends with your test and sign-off before the next on
 - [ ] 6.6 Failed delivery with reason: no branch-level API (G12); app explains and points to the branch manager
 - [x] 6.7 Tests: wrong status, fresh upload, reuse, lost upload answer, rejected POD, lost deliver answer (63 tests)
 
-### Phase 7 — Documents, testing and release (Nov 12 – Nov 17)
-- [ ] 7.1 Documents: label, loading sheet, THC, DRS, POD — server PDF if added, else built in app from API data with `pdf` package
-- [ ] 7.2 Print (Android print service / Bluetooth printer if needed) and share
-- [ ] 7.3 Error handling pass: offline banner, retry, keep form drafts
-- [ ] 7.4 Full test run on dev server: every module + permission checks
-- [ ] 7.5 UI polish, small and large screens
-- [ ] 7.6 Release signing key, `README` build steps, release APK + AAB
-- [ ] 7.7 Hand-over: source, build guide, test report
+### Phase 7 — Documents, testing and release
+- [x] 7.1 Documents built in the app from server data (G1 option A): shipment labels (one 4×6 per package, barcode + QR of `<AWB>-NNN`), loading sheet, THC, DRS, POD
+- [x] 7.2 Print and share through the Android print / share sheet (PdfPreview); Roboto bundled so ₹ prints offline
+- [x] 7.3 Scanning accepts label package ids everywhere (found while building labels: web labels encode `<AWB>-NNN`)
+- [ ] 7.4 Full test run on the dev server: every module + permission checks (blocked: needs server URL and test logins)
+- [x] 7.5 UI polish: colourful dashboard, design review page of all screens, layout fixes from tests
+- [x] 7.6 Release signing via `android/key.properties`, R8 shrink, README build steps; release AAB and split APKs build
+- [ ] 7.7 Hand-over: signed release from your keystore, test report from the dev server run
 
 **Total: about 12–14 working days. Target finish Tue 2026-11-17.**
 
