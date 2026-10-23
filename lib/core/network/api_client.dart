@@ -67,7 +67,8 @@ class ApiClient {
       if (body is! Map<String, dynamic>) {
         throw const ApiException(ApiErrorKind.unknown, 'Unexpected response from server.');
       }
-      final api = ApiResponse.fromJson(body, parse);
+      // Envelope first (no parsing), so a failure never runs the success parser.
+      final api = ApiResponse.fromJson(body, (d) => d);
       if (!api.success) {
         throw ApiException(
           ApiErrorKind.validation,
@@ -78,9 +79,13 @@ class ApiClient {
           requestId: api.requestId,
         );
       }
-      return api.data as T;
+      // `data` may be null (e.g. "no DRS yet"); the parser decides what that means.
+      return parse(api.data);
     } on DioException catch (e) {
       throw ApiException.fromDio(e);
+    } on TypeError {
+      // Response did not have the shape this app expects (backend changed?).
+      throw const ApiException(ApiErrorKind.unknown, 'Unexpected response from server.');
     }
   }
 }
