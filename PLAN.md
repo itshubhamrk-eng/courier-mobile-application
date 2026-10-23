@@ -66,13 +66,14 @@ same or next day. Each phase ends with your test and sign-off before the next on
 - [ ] 2.12 Label print / reprint: moved to Phase 7 (needs the document decision, G1)
 
 ### Phase 3 — Loading sheet (Nov 3 – Nov 4)
-- [ ] 3.1 Loading sheet list with filters
-- [ ] 3.2 New loading sheet: pick next branch / hub from `eligible-destinations`
-- [ ] 3.3 Add shipments by scan or search; server checks eligibility; block duplicates
-- [ ] 3.4 Running totals: shipment count, packages, weight
-- [ ] 3.5 Remove shipment, save, finalize
-- [ ] 3.6 Loading sheet detail
-- [ ] 3.7 Tests: eligibility, duplicate, incompatible shipment
+- [x] 3.1 Loading sheet list: Open / Dispatched / Completed tabs
+- [x] 3.2 New loading sheet: To hub (assigned hub preselected), To branch, Next stop (hubs only), same modes as web
+- [x] 3.3 Add shipments by scan, typing or tick list; phone explains why a scanned AWB cannot be loaded; server checks again
+- [x] 3.4 Running totals: shipment count, packages, weight
+- [x] 3.5 Remove shipment from an open sheet; creating the sheet is the save (no separate finalize step on the server)
+- [x] 3.6 Loading sheet detail, Generate THC button for open sheets
+- [x] 3.7 Tests: eligibility, request shape per mode, create flow with scan (45 tests)
+- [ ] 3.8 Print / share loading sheet: Phase 7 (G1)
 
 ### Phase 4 — THC (Nov 5)
 - [ ] 4.1 Pick eligible loading sheet

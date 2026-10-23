@@ -10,6 +10,9 @@ import 'features/auth/presentation/startup_pages.dart';
 import 'features/booking/presentation/booking_done_page.dart';
 import 'features/booking/presentation/booking_page.dart';
 import 'features/dashboard/presentation/dashboard_page.dart';
+import 'features/loading_sheet/presentation/loading_sheet_detail_page.dart';
+import 'features/loading_sheet/presentation/loading_sheets_page.dart';
+import 'features/loading_sheet/presentation/new_loading_sheet_page.dart';
 import 'features/more/more_page.dart';
 import 'features/shell/app_shell.dart';
 import 'features/shipments/presentation/bookings_list_page.dart';
@@ -24,6 +27,8 @@ const _routePermissions = {
   '/bookings': Permissions.shipmentRead,
   '/shipments': Permissions.shipmentRead,
   '/track': Permissions.shipmentRead,
+  '/loading-sheets/new': Permissions.manifestCreate,
+  '/loading-sheets': Permissions.manifestRead,
 };
 
 bool _allowed(Session session, String location) {
@@ -67,12 +72,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [GoRoute(path: '/bookings', builder: (_, _) => const BookingsListPage())],
           ),
           StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/loading-sheets',
-                builder: (_, _) => const ComingSoonPage(title: 'Loading Sheets', phase: 3),
-              ),
-            ],
+            routes: [GoRoute(path: '/loading-sheets', builder: (_, _) => const LoadingSheetsPage())],
           ),
           StatefulShellBranch(
             routes: [
@@ -101,7 +101,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/track',
         builder: (_, state) => TrackPage(initialAwb: state.uri.queryParameters['awb']),
       ),
-      GoRoute(path: '/loading-sheets/new', builder: (_, _) => const _Later('New Loading Sheet', 3)),
+      GoRoute(path: '/loading-sheets/new', builder: (_, _) => const NewLoadingSheetPage()),
+      GoRoute(
+        path: '/loading-sheets/:id',
+        builder: (_, state) => LoadingSheetDetailPage(sheetId: state.pathParameters['id']!),
+      ),
       GoRoute(path: '/thc', builder: (_, _) => const _Later('Generate THC', 4)),
       GoRoute(path: '/drs/new', builder: (_, _) => const _Later('Generate DRS', 5)),
       GoRoute(path: '/pod', builder: (_, _) => const _Later('Upload POD', 6)),

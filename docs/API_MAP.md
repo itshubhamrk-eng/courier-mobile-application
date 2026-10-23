@@ -111,7 +111,9 @@ deliveryType (DOOR|OFFICE), deliveryBranchId, destinationAreaId, businessCustome
 driverUserId, status (CREATED|DISPATCHED|COMPLETED), dispatchedAt, departureTime, fuelCost, driverAdvance,
 tollAmount, otherAmount, shipmentCount, totalWeight, totalPackages, version }`
 
-Eligible shipments to add: `GET /api/v1/shipments?status=READY_FOR_MANIFEST` (confirm filter name).
+Eligible shipments (as the web Loading Sheet page): `GET /api/v1/shipments?currentLocationId=<branch>&status=BOOKED&status=READY_FOR_MANIFEST&flowType=STANDARD`
+plus `unassignedDeliveryBranch=true` for To hub / To branch, or `nextLocationId=<branch>` for Next stop (hub only).
+Create sends `hubTransfer=true` for To hub. `eligible-destinations` is not used by the web page and not used here.
 
 ## 6. THC (= dispatch of a manifest)
 
