@@ -141,7 +141,13 @@ When the sheet's booking branch is a HUB, every shipment must first be out-scann
 | GET | `/api/v1/shipment-movement/drs?from&to&deliveryBranchId` | `[DrsSummaryResponse { deliveryUserId, runDate, drsNumber, shipmentCount, deliveredCount, pendingCount }]` |
 | GET | `/api/v1/shipment-movement/drs/detail?deliveryUserId&deliveryBranchId&runDate` | `DrsDetailResponse { drsNumber, shipments[] }` |
 
-Eligible shipments: status `IN_SCAN` at this branch (confirm).
+Eligible shipments (as the web Out For Delivery page): `deliveryBranchId=<branch>&status=IN_SCAN`; at a hub, hub direct:
+`currentLocationId=<hub>&unassignedDeliveryBranch=true&status=READY_FOR_MANIFEST`. In-scan, out-for-delivery and deliver need
+role COMPANY_ADMIN, BRANCH_MANAGER or OPERATOR on the server.
+
+Receiving (before DRS): incoming THCs `GET /api/v1/manifests?status=DISPATCHED&deliveryBranchId=<branch>`, then
+`POST /api/v1/shipment-movement/in-scan` `{receivingBranchId, trackingNumbers[], manifestNumber, missingTrackingNumbers[], remarks, photoUrl}`
+→ per-AWB results + `shortageTicketNumber`. The server refuses a shipment that is not DISPATCHED, so a repeat cannot double-receive.
 
 ## 8. POD and delivery
 

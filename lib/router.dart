@@ -10,6 +10,10 @@ import 'features/auth/presentation/startup_pages.dart';
 import 'features/booking/presentation/booking_done_page.dart';
 import 'features/booking/presentation/booking_page.dart';
 import 'features/dashboard/presentation/dashboard_page.dart';
+import 'features/drs/presentation/delivery_page.dart';
+import 'features/drs/presentation/drs_run_page.dart';
+import 'features/drs/presentation/new_drs_page.dart';
+import 'features/drs/presentation/receive_page.dart';
 import 'features/loading_sheet/presentation/loading_sheet_detail_page.dart';
 import 'features/loading_sheet/presentation/loading_sheets_page.dart';
 import 'features/loading_sheet/presentation/new_loading_sheet_page.dart';
@@ -31,6 +35,8 @@ const _routePermissions = {
   '/loading-sheets/new': Permissions.manifestCreate,
   '/loading-sheets': Permissions.manifestRead,
   '/thc': Permissions.manifestDispatch,
+  '/drs/new': Permissions.deliveryAssign,
+  '/receive': Permissions.manifestRead,
 };
 
 bool _allowed(Session session, String location) {
@@ -77,12 +83,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [GoRoute(path: '/loading-sheets', builder: (_, _) => const LoadingSheetsPage())],
           ),
           StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/delivery',
-                builder: (_, _) => const ComingSoonPage(title: 'Delivery', phase: 5),
-              ),
-            ],
+            routes: [GoRoute(path: '/delivery', builder: (_, _) => const DeliveryPage())],
           ),
           StatefulShellBranch(
             routes: [GoRoute(path: '/more', builder: (_, _) => const MorePage())],
@@ -112,7 +113,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/thc',
         builder: (_, state) => ThcPage(manifestId: state.uri.queryParameters['manifestId']),
       ),
-      GoRoute(path: '/drs/new', builder: (_, _) => const _Later('Generate DRS', 5)),
+      GoRoute(path: '/drs/new', builder: (_, _) => const NewDrsPage()),
+      GoRoute(
+        path: '/drs/run',
+        builder: (_, state) {
+          final q = state.uri.queryParameters;
+          return DrsRunPage(runKey: (user: q['user']!, branch: q['branch']!, date: q['date']!));
+        },
+      ),
+      GoRoute(
+        path: '/receive/:id',
+        builder: (_, state) => ReceivePage(manifestId: state.pathParameters['id']!),
+      ),
       GoRoute(path: '/pod', builder: (_, _) => const _Later('Upload POD', 6)),
     ],
   );

@@ -85,13 +85,15 @@ same or next day. Each phase ends with your test and sign-off before the next on
 - [ ] 4.7 Print / share THC: Phase 7 (G1)
 
 ### Phase 5 — DRS (Nov 6 – Nov 9)
-- [ ] 5.1 Select eligible shipments (scan / list)
-- [ ] 5.2 Assign authorized delivery partner
-- [ ] 5.3 Generate DRS (out-for-delivery)
-- [ ] 5.4 DRS list and detail: AWB, receiver, address, phone, COD / To-Pay amount
-- [ ] 5.5 Status tabs: assigned, pending, delivered, failed
-- [ ] 5.6 Open address in Google Maps; tap-to-call
-- [ ] 5.7 Tests: assignment rules, status changes
+- [x] 5.0 Receive incoming THCs (in-scan): scan / tick what arrived, the rest is reported missing (server raises a shortage ticket). Added: without it nothing becomes eligible for DRS
+- [x] 5.1 Select eligible shipments (received at this branch; hub direct at hubs), by list or scan
+- [x] 5.2 Assign delivery partner (staff list, G4), optional vehicle, fuel, delivery charge, optional partner OTP
+- [x] 5.3 Generate DRS (out-for-delivery), per-shipment refusals listed
+- [x] 5.4 DRS runs (today / 7 / 30 days) and run detail: AWB, receiver, address, phone, COD / To-Pay amount from payment-mode flags
+- [x] 5.5 Status tabs: all, pending, delivered, not delivered
+- [x] 5.6 Navigate (Google Maps) and call buttons
+- [x] 5.7 Tests: receive with missing, DRS with refusal, run view, request shapes (56 tests)
+- [ ] 5.8 Print DRS: Phase 7 (G1)
 
 ### Phase 6 — POD (Nov 10 – Nov 11)
 - [ ] 6.1 Pick shipment: scan, search, or from DRS
