@@ -6,6 +6,7 @@ import 'package:branch_ops/core/network/auth_interceptor.dart';
 import 'package:branch_ops/core/storage/secure_store.dart';
 import 'package:branch_ops/features/auth/application/auth_controller.dart';
 import 'package:branch_ops/features/booking/application/booking_draft.dart';
+import 'package:branch_ops/features/booking/data/booking_repository.dart';
 import 'package:branch_ops/router.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -29,20 +30,42 @@ const _ready = BookingDraft(
 );
 
 void main() {
-  group('preview chargeable weight (server rule: max(actual, volumetric, minimum))', () {
-    test('volumetric per item × quantity wins over actual', () {
-      // 40×30×30 / 5000 = 7.2 per piece × 2 = 14.4 > 10 actual
-      expect(_ready.previewChargeableWeight(null), 14.4);
+  group('server preview mapping', () {
+    test('maps weights, charge lines, net amount and warnings as sent', () {
+      final p = BookingPreview.fromJson({
+        'actualWeight': 10,
+        'volumetricWeight': 14.4,
+        'chargeableWeight': 14.4,
+        'destinationCityName': 'Satara',
+        'weightSlabLabel': '10-20 kg',
+        'ratePerKg': 30,
+        'ewayBillRequired': true,
+        'walletSufficient': false,
+        'walletAvailable': 100,
+        'charges': {
+          'freight': 432,
+          'fuelCharge': 20,
+          'applicableChargeLines': [
+            {'chargeName': 'Hamali', 'amount': 15},
+          ],
+          'gstAmount': 84.06,
+          'roundOff': -0.06,
+          'netAmount': 551,
+        },
+      });
+      expect(p.chargeableWeight, 14.4);
+      expect(p.slab, '10-20 kg');
+      expect(p.charges.lines.map((l) => l.label), ['Freight', 'Fuel', 'Hamali', 'GST', 'Round off']);
+      expect(p.charges.netAmount, 551, reason: 'net amount from the server, never summed in the app');
+      expect(p.ewayBillRequired, isTrue);
+      expect(p.walletSufficient, isFalse);
+      expect(p.walletAvailable, 100);
     });
 
-    test('actual wins when heavier', () {
-      final d = _ready.copyWith(items: const [ItemDraft(quantity: 1, weight: 25, length: 10, width: 10, height: 10)]);
-      expect(d.previewChargeableWeight(null), 25);
-    });
-
-    test('company minimum applies', () {
-      final d = _ready.copyWith(items: const [ItemDraft(quantity: 1, weight: 2)]);
-      expect(d.previewChargeableWeight(15), 15);
+    test('walletSufficient stays null when the mode does not collect at booking', () {
+      final p = BookingPreview.fromJson({'charges': {'netAmount': 1}});
+      expect(p.walletSufficient, isNull);
+      expect(p.ewayBillRequired, isFalse);
     });
   });
 
@@ -71,6 +94,7 @@ void main() {
 
   group('booking screen', () {
     late List<RequestOptions> creates;
+    late List<RequestOptions> previews;
 
     Future<FakeResponse> server(RequestOptions r, {required bool timeoutOnCreate}) async {
       switch (r.path) {
@@ -120,17 +144,16 @@ void main() {
               {'areaId': 'area-1', 'areaName': 'Satara City', 'cityName': 'Satara', 'primary': true},
             ]),
           );
-        case '/api/v1/district-level-freight/calculate':
-          return (
-            status: 200,
-            body: ok({'destinationCityName': 'Satara', 'totalFreight': 420, 'odaApplicable': false}),
-          );
-        case '/api/v1/pricing/calculate':
+        case '/api/v1/shipments/preview':
+          previews.add(r);
           return (
             status: 200,
             body: ok({
+              'destinationCityName': 'Satara',
               'chargeableWeight': 14.4,
-              'chargeBreakup': {'freight': 400, 'fuelCharge': 20, 'netAmount': 500},
+              'ewayBillRequired': false,
+              'walletSufficient': null,
+              'charges': {'freight': 400, 'fuelCharge': 20, 'netAmount': 500},
             }),
           );
         case '/api/v1/shipments' when r.method == 'POST':
@@ -156,6 +179,7 @@ void main() {
 
     Future<ProviderContainer> openBooking(WidgetTester tester, {required bool timeoutOnCreate}) async {
       creates = [];
+      previews = [];
       tester.view.physicalSize = const Size(400, 900);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -198,7 +222,11 @@ void main() {
 
       expect(find.text('Charges (server preview)'), findsOneWidget);
       expect(find.text('Satara'), findsOneWidget);
-      expect(find.textContaining('calculated by the server'), findsOneWidget);
+      expect(find.text('Net amount'), findsOneWidget);
+      expect(find.text('₹500.00'), findsOneWidget);
+      expect(previews, isNotEmpty);
+      expect((previews.first.data as Map)['bookingBranchId'], isNotNull, reason: 'preview sends the booking body');
+      expect(find.textContaining('wallet is short'), findsNothing);
 
       await tester.ensureVisible(find.text('Confirm booking'));
       await tester.pumpAndSettle();

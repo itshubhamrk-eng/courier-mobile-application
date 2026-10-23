@@ -223,28 +223,23 @@ class _Server {
             {'areaId': 'a2', 'areaName': 'Karanje', 'cityName': 'Satara', 'odaApplicable': true},
           ]),
         );
-      case '/api/v1/district-level-freight/calculate':
+      case '/api/v1/shipments/preview':
         return (
           status: 200,
           body: ok({
+            'actualWeight': 10,
+            'volumetricWeight': 14.4,
+            'chargeableWeight': 14.4,
             'destinationCityName': 'Satara',
             'weightSlabLabel': '10–25 kg',
             'ratePerKg': 22,
-            'baseFreight': 316.8,
-            'totalFreight': 316.8,
-            'odaApplicable': false,
-          }),
-        );
-      case '/api/v1/pricing/calculate':
-        return (
-          status: 200,
-          body: ok({
-            'chargeableWeight': 14.4,
-            'chargeBreakup': {
+            'ewayBillRequired': false,
+            'charges': {
               'freight': 316.8,
               'fuelCharge': 31.68,
               'handlingCharge': 20,
               'gstAmount': 66.41,
+              'roundOff': 0.11,
               'netAmount': 435,
             },
           }),

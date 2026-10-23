@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -410,26 +412,14 @@ class _ReviewStepState extends ConsumerState<_ReviewStep> {
   /// True while the create request is in flight; blocks a second submit.
   bool _submitting = false;
 
-  /// Re-price whenever any input the previews read changes.
-  void _refreshPreviewIfNeeded(BookingDraft d, BookingSettings? settings) {
+  /// Re-price whenever anything in the booking body changes.
+  void _refreshPreviewIfNeeded(BookingDraft d) {
     final branchId = ref.read(sessionProvider)?.operatingBranchId;
-    if (branchId == null || d.serviceTypeId == null || d.paymentModeId == null || settings == null) return;
-    final weight = d.previewChargeableWeight(settings.minimumChargeableKg);
-    final key = [
-      d.pickupPincode,
-      d.deliveryPincode,
-      d.destinationAreaId,
-      d.serviceTypeId,
-      d.paymentModeId,
-      weight,
-      d.totalActualWeight,
-      d.declaredValue,
-      d.packageCount,
-      d.businessCustomerId,
-    ].join('|');
+    if (branchId == null || d.serviceTypeId == null || d.paymentModeId == null) return;
+    final key = jsonEncode(d.toCreateRequest(branchId));
     if (key == _previewKey) return;
     _previewKey = key;
-    _preview = ref.read(bookingRepositoryProvider).preview(d, branchId: branchId, chargeableWeight: weight);
+    _preview = ref.read(bookingRepositoryProvider).preview(d, branchId: branchId);
   }
 
   Future<void> _book() async {
@@ -491,8 +481,7 @@ class _ReviewStepState extends ConsumerState<_ReviewStep> {
     final d = ref.watch(bookingDraftProvider);
     final services = ref.watch(serviceTypesProvider);
     final payments = ref.watch(paymentModesProvider);
-    final settings = ref.watch(bookingSettingsProvider);
-    _refreshPreviewIfNeeded(d, settings.value);
+    _refreshPreviewIfNeeded(d);
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -565,22 +554,29 @@ class _ReviewStepState extends ConsumerState<_ReviewStep> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (p.walletSufficient == false)
+                    _Warning(
+                      'Branch wallet is short for this booking'
+                      '${p.walletAvailable != null ? ' (available ${Fmt.money(p.walletAvailable)})' : ''}. '
+                      'Booking will be refused until the wallet is topped up.',
+                    ),
+                  if (p.ewayBillRequired && d.ewayInvoiceNumber.trim().isEmpty)
+                    _Warning('An E-Way Bill is required for this invoice value. Add it on the Packages step.'),
                   _SummaryCard(
                     title: 'Charges (server preview)',
                     rows: [
                       if (p.destinationCity != null) ('Destination city', p.destinationCity!),
+                      if (p.actualWeight != null) ('Actual weight', Fmt.kg(p.actualWeight)),
+                      if ((p.volumetricWeight ?? 0) > 0) ('Volumetric weight', Fmt.kg(p.volumetricWeight)),
                       ('Chargeable weight', Fmt.kg(p.chargeableWeight)),
                       if (p.slab != null) ('Rate slab', p.slab!),
                       if (p.ratePerKg != null) ('Rate per kg', Fmt.money(p.ratePerKg)),
-                      ('Freight', Fmt.money(p.totalFreight)),
-                      if (p.odaCharge != null) ('ODA', Fmt.money(p.odaCharge)),
-                      if ((p.customerExtraCharges ?? 0) > 0) ('Customer charges', Fmt.money(p.customerExtraCharges)),
-                      for (final l in p.charges.lines.where((l) => l.label != 'Freight' && l.label != 'ODA'))
-                        (l.label, Fmt.money(l.amount)),
+                      for (final l in p.charges.lines) (l.label, Fmt.money(l.amount)),
+                      ('Net amount', Fmt.money(p.charges.netAmount)),
                     ],
                   ),
                   const Text(
-                    'The final net amount, GST and AWB are calculated by the server when you book.',
+                    'Priced by the server exactly as booking will price it. The AWB is generated when you book.',
                     style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                   ),
                   const SizedBox(height: 16),
@@ -606,6 +602,22 @@ class _ReviewStepState extends ConsumerState<_ReviewStep> {
 }
 
 // ------------------------------------------------------------------ widgets
+
+class _Warning extends StatelessWidget {
+  const _Warning(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Card(
+    color: Colors.orange.shade50,
+    margin: const EdgeInsets.only(bottom: 12),
+    child: ListTile(
+      leading: const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+      title: Text(text, style: const TextStyle(fontSize: 14)),
+    ),
+  );
+}
 
 class _StepHeader extends StatelessWidget {
   const _StepHeader({required this.step});
