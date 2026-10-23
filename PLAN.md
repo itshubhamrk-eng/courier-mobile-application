@@ -49,20 +49,21 @@ same or next day. Each phase ends with your test and sign-off before the next on
 - [x] 1.5 Logout, session-expired screen, no tokens in logs
 - [x] 1.6 Bottom navigation: Home, Bookings, Loading Sheets, Delivery, More
 - [x] 1.7 Dashboard: 9 count cards + 6 quick actions, pull-to-refresh
-- [ ] 1.8 Tests: login, refresh, expiry, permissions, layout (done, 23 tests); branch isolation on the live server (needs test logins)
+- [ ] 1.8 Tests: login, refresh, expiry, permissions, layout (done); branch isolation on the live server (needs test logins)
 
 ### Phase 2 — Shipment booking and tracking (Oct 29 – Nov 2)
-- [ ] 2.1 Customer picker (search individual / business)
-- [ ] 2.2 Sender / receiver and pickup / delivery address selection
-- [ ] 2.3 Destination pincode serviceability check
-- [ ] 2.4 Package details: quantity, weight, L × W × H (multiple pieces)
-- [ ] 2.5 Service type and payment mode from server
-- [ ] 2.6 Freight and charges from server; booking summary screen
-- [ ] 2.7 Submit once (double-tap guard, idempotent retry), show AWB
-- [ ] 2.8 Shipment list (bookings tab) and shipment detail
-- [ ] 2.9 Track screen: AWB search + barcode / QR scan
-- [ ] 2.10 Movement timeline (hub, failed, hold, misroute, RTO), POD block when delivered
-- [ ] 2.11 Tests: booking happy path, validation errors, tracking
+- [x] 2.1 Customer picker (search individual / business)
+- [x] 2.2 Sender / receiver and pickup / delivery address selection
+- [x] 2.3 Destination pincode serviceability check
+- [x] 2.4 Package details: quantity, weight, L × W × H (multiple pieces)
+- [x] 2.5 Service type and payment mode from server
+- [x] 2.6 Freight and charges previews from server; booking summary screen (final net amount from server after booking, see G9)
+- [x] 2.7 Submit once (double-tap guard, no auto-retry; timeout warns to check Bookings), show AWB
+- [x] 2.8 Shipment list (bookings tab) and shipment detail
+- [x] 2.9 Track screen: AWB search + barcode / QR scan
+- [x] 2.10 Movement timeline (hub, failed, hold, misroute, RTO), POD block when delivered
+- [x] 2.11 Tests: booking happy path, timeout, validation errors, tracking (37 tests)
+- [ ] 2.12 Label print / reprint: moved to Phase 7 (needs the document decision, G1)
 
 ### Phase 3 — Loading sheet (Nov 3 – Nov 4)
 - [ ] 3.1 Loading sheet list with filters

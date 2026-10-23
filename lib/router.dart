@@ -2,12 +2,36 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/auth/permissions.dart';
 import 'features/auth/application/auth_controller.dart';
+import 'features/auth/data/session.dart';
 import 'features/auth/presentation/login_page.dart';
 import 'features/auth/presentation/startup_pages.dart';
+import 'features/booking/presentation/booking_done_page.dart';
+import 'features/booking/presentation/booking_page.dart';
 import 'features/dashboard/presentation/dashboard_page.dart';
 import 'features/more/more_page.dart';
 import 'features/shell/app_shell.dart';
+import 'features/shipments/presentation/bookings_list_page.dart';
+import 'features/shipments/presentation/shipment_detail_page.dart';
+import 'features/tracking/presentation/track_page.dart';
+
+/// Screens that need a permission. The server checks every call anyway; this
+/// keeps users from landing on a screen whose actions would all be refused.
+const _routePermissions = {
+  '/bookings/new': Permissions.shipmentCreate,
+  '/bookings/done': Permissions.shipmentCreate,
+  '/bookings': Permissions.shipmentRead,
+  '/shipments': Permissions.shipmentRead,
+  '/track': Permissions.shipmentRead,
+};
+
+bool _allowed(Session session, String location) {
+  for (final e in _routePermissions.entries) {
+    if (location == e.key || location.startsWith('${e.key}/')) return session.can(e.value);
+  }
+  return true;
+}
 
 final routerProvider = Provider<GoRouter>((ref) {
   // Re-run redirects whenever the auth state changes (login, logout, expiry).
@@ -25,6 +49,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         AuthRestoring() || AuthRestoreFailed() => at == '/startup' ? null : '/startup',
         AuthSignedOut() => at == '/login' ? null : '/login',
         AuthSignedIn(:final session) when session.operatingBranchId == null => at == '/no-branch' ? null : '/no-branch',
+        AuthSignedIn(:final session) when !_allowed(session, at) => '/home',
         AuthSignedIn() => (at == '/login' || at == '/startup' || at == '/no-branch') ? '/home' : null,
       };
     },
@@ -39,12 +64,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [GoRoute(path: '/home', builder: (_, _) => const DashboardPage())],
           ),
           StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/bookings',
-                builder: (_, _) => const ComingSoonPage(title: 'Bookings', phase: 2),
-              ),
-            ],
+            routes: [GoRoute(path: '/bookings', builder: (_, _) => const BookingsListPage())],
           ),
           StatefulShellBranch(
             routes: [
@@ -68,8 +88,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       // Quick-action targets, filled in by later phases.
-      GoRoute(path: '/bookings/new', builder: (_, _) => const _Later('Book Shipment', 2)),
-      GoRoute(path: '/track', builder: (_, _) => const _Later('Track Shipment', 2)),
+      GoRoute(path: '/bookings/new', builder: (_, _) => const BookingPage()),
+      GoRoute(
+        path: '/bookings/done/:id',
+        builder: (_, state) => BookingDonePage(shipmentId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/shipments/:id',
+        builder: (_, state) => ShipmentDetailPage(shipmentId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/track',
+        builder: (_, state) => TrackPage(initialAwb: state.uri.queryParameters['awb']),
+      ),
       GoRoute(path: '/loading-sheets/new', builder: (_, _) => const _Later('New Loading Sheet', 3)),
       GoRoute(path: '/thc', builder: (_, _) => const _Later('Generate THC', 4)),
       GoRoute(path: '/drs/new', builder: (_, _) => const _Later('Generate DRS', 5)),

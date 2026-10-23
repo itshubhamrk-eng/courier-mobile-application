@@ -13,6 +13,11 @@ until approved.
 | G6 | Dashboard cards "Generated THC" and "Pending POD" have no single field. | Phase 1 dashboard | Built as: loading sheets = `manifests/summary?status=CREATED`, THC in transit = `status=DISPATCHED`, waiting for DRS / out for delivery = `shipments/summary` `statusCounts` (`IN_SCAN`, `OUT_FOR_DELIVERY`) for `deliveryBranchId`, delivered today = `deliveredDateFrom/To`, POD = `branchOverview.podOverview.pendingUpload`. Confirm on the live server. |
 | G8 | Login needs a company: `LoginRequest` documents `companyCode` as reserved, but `AuthService` resolves it and the web login sends it. | Login screen | App asks for company code (remembered after first login). |
 | G7 | Transporter (third-party carrier) is not a field on dispatch; dispatch takes `vehicleId` and `driverUserId` only. | THC form | Show vehicle + driver + charges only, unless a transporter master exists. |
+| G9 | No booking dry-run endpoint. The web screen calls `/pricing/calculate` and `/district-level-freight/calculate`, then works out net amount, GST and round-off itself in the browser. | Booking summary | App shows both server previews line by line but **no total of its own**; the final net amount comes from the server after booking (`/shipments/{id}/charges`). Backend (proposed): `POST /api/v1/shipments/preview` taking `CreateShipmentRequest`, running the same pricing as create without saving, returning the charge breakup and net amount. |
+| G10 | Chargeable weight for the previews must be computed before calling them (both endpoints take a weight). | Booking summary | App applies the server's rule from `ShipmentServiceImpl.summariseWeight` (volumetric L×W×H/5000 × qty, max with actual and the company minimum), as the web does. Preview input only; the server recomputes on booking. G9 would remove this. |
+
+## Booking features not in the mobile app (use the web app)
+Crossing branches, appointment delivery, MSRTC flow, manual shipment number, rate / freight-factor / net-amount overrides, other-charges and ODA overrides, E-Way Bill document upload. Each can be added later if branch staff need it on mobile.
 
 ## Needed from you
 1. Dev server base URL (Swagger reachable) and one test login per role: branch booking clerk, branch manager, delivery partner.
