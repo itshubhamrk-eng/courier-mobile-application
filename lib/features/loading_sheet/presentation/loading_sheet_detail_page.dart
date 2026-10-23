@@ -13,6 +13,8 @@ import '../../masters/data/masters.dart';
 import '../../shipments/data/shipment_models.dart';
 import '../../shipments/presentation/bookings_list_page.dart';
 import '../data/loading_sheet_repository.dart';
+import '../../documents/document_page.dart';
+import '../../documents/document_service.dart';
 
 typedef SheetWithShipments = ({LoadingSheet sheet, List<ShipmentSummary> shipments});
 
@@ -35,7 +37,26 @@ class LoadingSheetDetailPage extends ConsumerWidget {
     Future<void> refresh() => ref.refresh(loadingSheetDetailProvider(sheetId).future);
 
     return Scaffold(
-      appBar: AppBar(title: Text(data.value?.sheet.number ?? 'Loading Sheet')),
+      appBar: AppBar(
+        title: Text(data.value?.sheet.number ?? 'Loading Sheet'),
+        actions: [
+          if (data.value case final v?)
+            PopupMenuButton<bool>(
+              tooltip: 'Print',
+              icon: const Icon(Icons.print_outlined),
+              onSelected: (asThc) => openDocument(
+                context,
+                title: '${asThc ? 'THC' : 'Loading sheet'} ${v.sheet.number}',
+                fileName: '${asThc ? 'thc' : 'loading-sheet'}-${v.sheet.number}.pdf',
+                build: () => ref.read(documentServiceProvider).sheet(sheetId, asThc: asThc),
+              ),
+              itemBuilder: (_) => [
+                const PopupMenuItem(value: false, child: Text('Loading sheet')),
+                if (!v.sheet.isOpen) const PopupMenuItem(value: true, child: Text('THC')),
+              ],
+            ),
+        ],
+      ),
       body: switch (data) {
         AsyncData(:final value) => RefreshIndicator(
           onRefresh: refresh,

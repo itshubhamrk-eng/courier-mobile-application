@@ -5,6 +5,7 @@ import '../../../core/network/api_client.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/api_response.dart';
 import 'shipment_models.dart';
+import '../../../core/scan_code.dart';
 
 final shipmentRepositoryProvider = Provider<ShipmentRepository>(
   (ref) => ShipmentRepository(ref.watch(apiClientProvider)),
@@ -60,10 +61,21 @@ class ShipmentRepository {
       _api.get('/api/v1/shipments/$id', parse: (d) => ShipmentDetail.fromJson(jMap(d)));
 
   /// AWB (tracking number) lookup; the server also matches shipment numbers.
-  Future<ShipmentDetail> byAwb(String awb) => _api.get(
-    '/api/v1/shipments/track/${Uri.encodeComponent(awb.trim())}',
-    parse: (d) => ShipmentDetail.fromJson(jMap(d)),
-  );
+  /// A scanned label package id (`<AWB>-001`) falls back to its AWB.
+  Future<ShipmentDetail> byAwb(String awb) async {
+    final candidates = scanCandidates(awb);
+    for (var i = 0; i < candidates.length; i++) {
+      try {
+        return await _api.get(
+          '/api/v1/shipments/track/${Uri.encodeComponent(candidates[i])}',
+          parse: (d) => ShipmentDetail.fromJson(jMap(d)),
+        );
+      } on ApiException catch (e) {
+        if (e.kind != ApiErrorKind.notFound || i == candidates.length - 1) rethrow;
+      }
+    }
+    throw StateError('unreachable');
+  }
 
   Future<List<StatusEvent>> history(String id) => _api.get(
     '/api/v1/shipments/$id/history',

@@ -10,6 +10,7 @@ import '../../auth/application/auth_controller.dart';
 import '../../loading_sheet/presentation/loading_sheet_detail_page.dart';
 import '../../masters/data/masters.dart';
 import '../data/drs_repository.dart';
+import '../../../core/scan_code.dart';
 
 /// Receive an incoming THC: scan or tick what arrived; the rest is reported missing.
 class ReceivePage extends ConsumerStatefulWidget {
@@ -39,7 +40,9 @@ class _ReceivePageState extends ConsumerState<ReceivePage> {
     final awb = raw.trim();
     _scan.clear();
     if (awb.isEmpty) return;
-    final s = data.shipments.where((x) => x.trackingNumber == awb || x.shipmentNumber == awb).firstOrNull;
+    final s = data.shipments
+        .where((x) => matchesScan(trackingNumber: x.trackingNumber, shipmentNumber: x.shipmentNumber, raw: awb))
+        .firstOrNull;
     if (s == null) {
       showFailure(context, ApiException(ApiErrorKind.validation, '$awb is not on THC ${data.sheet.number}.'));
       return;

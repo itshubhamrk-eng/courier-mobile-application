@@ -12,6 +12,8 @@ import '../../masters/data/masters.dart';
 import '../../thc/data/thc_repository.dart';
 import '../data/drs_repository.dart';
 import 'drs_widgets.dart';
+import '../../documents/document_page.dart';
+import '../../documents/document_service.dart';
 
 typedef DrsRunKey = ({String user, String branch, String date});
 
@@ -54,6 +56,27 @@ class DrsRunPage extends ConsumerWidget {
       child: Scaffold(
         appBar: AppBar(
           title: Text(detail.value?.drsNumber ?? 'Delivery run'),
+          actions: [
+            IconButton(
+              tooltip: 'Print DRS',
+              icon: const Icon(Icons.print_outlined),
+              onPressed: () => openDocument(
+                context,
+                title: detail.value?.drsNumber ?? 'DRS',
+                fileName: 'drs-${detail.value?.drsNumber ?? runKey.date}.pdf',
+                build: () => ref
+                    .read(documentServiceProvider)
+                    .drs(
+                      DrsRun(
+                        deliveryUserId: runKey.user,
+                        deliveryBranchId: runKey.branch,
+                        runDate: DateTime.parse(runKey.date),
+                        drsNumber: detail.value?.drsNumber,
+                      ),
+                    ),
+              ),
+            ),
+          ],
           bottom: TabBar(
             isScrollable: true,
             labelColor: Colors.white,

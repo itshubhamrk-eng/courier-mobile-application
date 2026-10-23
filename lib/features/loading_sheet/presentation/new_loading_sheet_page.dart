@@ -13,6 +13,7 @@ import '../../masters/data/masters.dart';
 import '../../shipments/data/shipment_models.dart';
 import '../../shipments/data/shipment_repository.dart';
 import '../data/loading_sheet_repository.dart';
+import '../../../core/scan_code.dart';
 
 class NewLoadingSheetPage extends ConsumerStatefulWidget {
   const NewLoadingSheetPage({super.key});
@@ -116,7 +117,9 @@ class _NewLoadingSheetPageState extends ConsumerState<NewLoadingSheetPage> {
     final awb = raw.trim();
     if (awb.isEmpty) return;
     _scan.clear();
-    final local = _eligible.where((s) => s.trackingNumber == awb || s.shipmentNumber == awb).firstOrNull;
+    final local = _eligible
+        .where((s) => matchesScan(trackingNumber: s.trackingNumber, shipmentNumber: s.shipmentNumber, raw: awb))
+        .firstOrNull;
     if (local != null) {
       if (_selected.contains(local.id)) {
         showSuccess(context, '$awb is already selected.');

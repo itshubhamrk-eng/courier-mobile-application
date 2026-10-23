@@ -15,6 +15,9 @@ import '../../loading_sheet/presentation/loading_sheets_page.dart';
 import '../../masters/data/masters.dart';
 import '../data/thc_repository.dart';
 import 'staff_picker.dart';
+import '../../../core/scan_code.dart';
+import '../../documents/document_page.dart';
+import '../../documents/document_service.dart';
 
 /// Generate THC. Without [manifestId] it first lists the branch's open loading sheets.
 class ThcPage extends ConsumerWidget {
@@ -102,7 +105,9 @@ class _ThcFormState extends ConsumerState<_ThcForm> {
     final awb = raw.trim();
     _scan.clear();
     if (awb.isEmpty || _scanning) return;
-    final onSheet = data.shipments.where((s) => s.trackingNumber == awb || s.shipmentNumber == awb).firstOrNull;
+    final onSheet = data.shipments
+        .where((s) => matchesScan(trackingNumber: s.trackingNumber, shipmentNumber: s.shipmentNumber, raw: awb))
+        .firstOrNull;
     if (onSheet == null) {
       showFailure(context, ApiException(ApiErrorKind.validation, '$awb is not on this loading sheet.'));
       return;
@@ -515,10 +520,16 @@ class _ResultView extends ConsumerWidget {
         const SizedBox(height: 16),
         FilledButton(onPressed: () => context.go('/loading-sheets'), child: const Text('Done')),
         const SizedBox(height: 8),
-        const Text(
-          'THC printing arrives in Phase 7.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+        OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+          onPressed: () => openDocument(
+            context,
+            title: 'THC ${result.number}',
+            fileName: 'thc-${result.number}.pdf',
+            build: () => ref.read(documentServiceProvider).sheet(result.manifestId, asThc: true),
+          ),
+          icon: const Icon(Icons.print_outlined),
+          label: const Text('Print THC'),
         ),
       ],
     );

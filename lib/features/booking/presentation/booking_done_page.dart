@@ -7,6 +7,8 @@ import '../../../core/format.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../shipments/data/shipment_repository.dart';
+import '../../documents/document_page.dart';
+import '../../documents/document_service.dart';
 
 /// After booking: the server's AWB and its final charges.
 class BookingDonePage extends ConsumerWidget {
@@ -85,11 +87,17 @@ class BookingDonePage extends ConsumerWidget {
             ),
             const SizedBox(height: 10),
             TextButton(onPressed: () => context.go('/home'), child: const Text('Done')),
-            const SizedBox(height: 8),
-            const Text(
-              'Label printing arrives in Phase 7.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            const SizedBox(height: 4),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+              onPressed: () => openDocument(
+                context,
+                title: 'Labels ${value.shipment.trackingNumber}',
+                fileName: 'label-${value.shipment.trackingNumber}.pdf',
+                build: () => ref.read(documentServiceProvider).label(shipmentId),
+              ),
+              icon: const Icon(Icons.print_outlined),
+              label: const Text('Print labels'),
             ),
           ],
         ),
