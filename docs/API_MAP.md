@@ -1,6 +1,9 @@
 # API map — courier-service for the Branch Operations app
 
 Source: `occplsoftech/courier-service` `main` (read 2026-10-23), controllers and DTO records.
+Also compared with `itshubhamrk-eng/courier-management-backend` (`backend/`, 2026-10-23): every endpoint and DTO
+field listed here is the same in both; the only differences are customer-portal endpoints and three extra
+`CustomerResponse` fields in courier-service, none used by the app.
 To check against the live Swagger (`/v3/api-docs`) once a dev server URL is available.
 
 ## Common shapes
@@ -124,8 +127,11 @@ Create sends `hubTransfer=true` for To hub. `eligible-destinations` is not used 
 | POST | `/api/v1/shipment-movement/dispatch-otp/verify` | `{ manifestId, driverUserId, otp }` |
 | POST | `/api/v1/shipment-movement/dispatch` | `{ manifestId, vehicleId, driverUserId, departureTime, fuelCost, driverAdvance, tollAmount, otherAmount }` → `DispatchManifestResponse` |
 
-Server moves manifest `CREATED → DISPATCHED`, so a second dispatch is rejected. The THC number is the manifest
-number (confirm with the web `trip-hire-challan` page).
+Server moves manifest `CREATED → DISPATCHED`, so a second dispatch is rejected ("already been dispatched").
+The THC number is the manifest number (as on the web Trip Hire Challan page). Driver OTP is optional on web and here.
+When the sheet's booking branch is a HUB, every shipment must first be out-scanned
+(`POST /api/v1/hub-operations/out-scan`, `{manifestId, hubBranchId, trackingNumbers}`), or dispatch fails with
+"has shipments that have not been out-scanned yet". Drivers come from `GET /api/v1/users?status=ACTIVE` (see G4).
 
 ## 7. DRS
 

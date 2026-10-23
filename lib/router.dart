@@ -17,6 +17,7 @@ import 'features/more/more_page.dart';
 import 'features/shell/app_shell.dart';
 import 'features/shipments/presentation/bookings_list_page.dart';
 import 'features/shipments/presentation/shipment_detail_page.dart';
+import 'features/thc/presentation/thc_page.dart';
 import 'features/tracking/presentation/track_page.dart';
 
 /// Screens that need a permission. The server checks every call anyway; this
@@ -29,6 +30,7 @@ const _routePermissions = {
   '/track': Permissions.shipmentRead,
   '/loading-sheets/new': Permissions.manifestCreate,
   '/loading-sheets': Permissions.manifestRead,
+  '/thc': Permissions.manifestDispatch,
 };
 
 bool _allowed(Session session, String location) {
@@ -106,7 +108,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/loading-sheets/:id',
         builder: (_, state) => LoadingSheetDetailPage(sheetId: state.pathParameters['id']!),
       ),
-      GoRoute(path: '/thc', builder: (_, _) => const _Later('Generate THC', 4)),
+      GoRoute(
+        path: '/thc',
+        builder: (_, state) => ThcPage(manifestId: state.uri.queryParameters['manifestId']),
+      ),
       GoRoute(path: '/drs/new', builder: (_, _) => const _Later('Generate DRS', 5)),
       GoRoute(path: '/pod', builder: (_, _) => const _Later('Upload POD', 6)),
     ],
