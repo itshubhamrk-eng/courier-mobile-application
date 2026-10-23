@@ -76,12 +76,13 @@ same or next day. Each phase ends with your test and sign-off before the next on
 - [ ] 3.8 Print / share loading sheet: Phase 7 (G1)
 
 ### Phase 4 — THC (Nov 5)
-- [ ] 4.1 Pick eligible loading sheet
-- [ ] 4.2 Transporter, vehicle (from `/vehicles`), driver, route fields
-- [ ] 4.3 Transport charges where API gives them
-- [ ] 4.4 Dispatch OTP request / verify if required, generate THC
-- [ ] 4.5 THC number and detail; block second generation
-- [ ] 4.6 Tests: THC generation, duplicate block
+- [x] 4.1 Pick an open loading sheet (or arrive from the sheet's Generate THC button)
+- [x] 4.2 Vehicle (active `/vehicles`), driver (`/users`), departure time. No transporter or route fields in the API (G7)
+- [x] 4.3 Trip expenses the API takes: fuel, driver advance, toll, other
+- [x] 4.4 Optional driver OTP (as on web), out-scan step when the sheet starts at a hub (server requires it), generate THC
+- [x] 4.5 THC number (= loading sheet number) and details; a dispatched sheet shows its THC instead of a form; lost answer is settled by reading the sheet back
+- [x] 4.6 Tests: generation, hub out-scan, lost answer, already dispatched (50 tests)
+- [ ] 4.7 Print / share THC: Phase 7 (G1)
 
 ### Phase 5 — DRS (Nov 6 – Nov 9)
 - [ ] 5.1 Select eligible shipments (scan / list)
