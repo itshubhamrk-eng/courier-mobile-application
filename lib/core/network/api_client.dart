@@ -5,8 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/env.dart';
 import 'api_exception.dart';
 import 'api_response.dart';
+import 'auth_interceptor.dart';
 
-final dioProvider = Provider<Dio>((ref) {
+Dio _newDio() {
   final dio = Dio(
     BaseOptions(
       baseUrl: Env.apiBaseUrl,
@@ -19,6 +20,16 @@ final dioProvider = Provider<Dio>((ref) {
   if (Env.isDev && kDebugMode) {
     dio.interceptors.add(_SafeLogInterceptor());
   }
+  return dio;
+}
+
+/// No auth header. Used only for `/auth/login`, `/auth/refresh` and `/auth/logout`.
+final bareDioProvider = Provider<Dio>((ref) => _newDio());
+
+/// Every other call: adds the bearer token and refreshes it when needed.
+final dioProvider = Provider<Dio>((ref) {
+  final dio = _newDio();
+  dio.interceptors.insert(0, AuthInterceptor(dio, () => ref.read(tokenSourceProvider)));
   return dio;
 });
 
@@ -38,9 +49,13 @@ class ApiClient {
     Object? body,
     Map<String, dynamic>? query,
     required T Function(Object? data) parse,
+    Options? options,
     ProgressCallback? onSendProgress,
-  }) =>
-      _send(() => _dio.post<Object?>(path, data: body, queryParameters: query, onSendProgress: onSendProgress), parse);
+  }) => _send(
+    () =>
+        _dio.post<Object?>(path, data: body, queryParameters: query, options: options, onSendProgress: onSendProgress),
+    parse,
+  );
 
   Future<T> delete<T>(String path, {required T Function(Object? data) parse}) =>
       _send(() => _dio.delete<Object?>(path), parse);

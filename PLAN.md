@@ -42,14 +42,14 @@ same or next day. Each phase ends with your test and sign-off before the next on
 - [x] 0.8 GitHub Actions: analyze + test + debug APK on every PR
 
 ### Phase 1 — Login, auth and dashboard (Oct 27 – Oct 28)
-- [ ] 1.1 Login screen, form validation, show server errors
-- [ ] 1.2 Token storage in secure storage; Dio interceptor adds token, refreshes on 401, logs out when refresh fails
-- [ ] 1.3 Load `/auth/me`: company, branch, roles, permissions into a session provider
-- [ ] 1.4 Permission guard for routes and buttons; hide what role cannot do
-- [ ] 1.5 Logout, session-expired screen, no tokens in logs
-- [ ] 1.6 Bottom navigation: Home, Bookings, Loading Sheets, Delivery, More
-- [ ] 1.7 Dashboard: 9 count cards + 6 quick actions, pull-to-refresh
-- [ ] 1.8 Tests: login, refresh, expiry, branch isolation (other branch IDs rejected by server)
+- [x] 1.1 Login screen, form validation, show server errors
+- [x] 1.2 Token storage in secure storage; Dio interceptor adds token, refreshes on 401, logs out when refresh fails
+- [x] 1.3 Company, branch, roles, permissions from the login / refresh response (`/auth/me` lacks branch and permissions)
+- [x] 1.4 Hide quick actions and menu items the role cannot use (route guards added with each real screen; server checks every call)
+- [x] 1.5 Logout, session-expired screen, no tokens in logs
+- [x] 1.6 Bottom navigation: Home, Bookings, Loading Sheets, Delivery, More
+- [x] 1.7 Dashboard: 9 count cards + 6 quick actions, pull-to-refresh
+- [ ] 1.8 Tests: login, refresh, expiry, permissions, layout (done, 23 tests); branch isolation on the live server (needs test logins)
 
 ### Phase 2 — Shipment booking and tracking (Oct 29 – Nov 2)
 - [ ] 2.1 Customer picker (search individual / business)

@@ -26,20 +26,22 @@ class StatCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, color: color, size: 22),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Text(value?.toString() ?? '–', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
               const SizedBox(height: 2),
-              Text(
-                label,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              // Flexible: a long label ellipsizes instead of overflowing a fixed-height grid cell.
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                ),
               ),
             ],
           ),
