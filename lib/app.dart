@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/theme/app_theme.dart';
-import 'features/preview/ui_kit_preview_page.dart';
+import 'router.dart';
 
-class BranchOpsApp extends StatelessWidget {
+class BranchOpsApp extends ConsumerWidget {
   const BranchOpsApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Branch Operations',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      // Phase 1 replaces this with go_router: login, then the bottom-navigation shell.
-      home: const UiKitPreviewPage(),
-    );
-  }
+  Widget build(BuildContext context, WidgetRef ref) => MaterialApp.router(
+    title: 'Branch Operations',
+    debugShowCheckedModeBanner: false,
+    theme: AppTheme.light(),
+    routerConfig: ref.watch(routerProvider),
+  );
 }

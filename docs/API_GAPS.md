@@ -10,7 +10,8 @@ until approved.
 | G3 | `ShipmentStatus` has no failed-delivery, hold or misroute status; those live in hub exceptions (`ON_HOLD`, `MISROUTED`) and POD entry status (`NOT_DELIVERED`, `RTO`). | Tracking badges and failed-delivery screen | App combines status history + exceptions + POD entry. Confirm the failed-delivery path the web uses. |
 | G4 | No clear endpoint listing delivery partners / drivers for a branch user (`/api/v1/users` may need admin permission). | DRS partner picker, THC driver picker | Check what the web DRS / THC pages call; add a branch-scoped picker endpoint only if none exists. |
 | G5 | `/auth/me` has no `branchId` or `permissions`; only `LoginResponse` has them. | App restart with a saved token | App uses the refresh response, which is a full `LoginResponse`. No change needed. |
-| G6 | Dashboard cards "Generated THC" and "Pending POD" have no single field. | Phase 1 dashboard | Use `manifests/summary` and `branchOverview.podOverview`; confirm the field names on the live server. |
+| G6 | Dashboard cards "Generated THC" and "Pending POD" have no single field. | Phase 1 dashboard | Built as: loading sheets = `manifests/summary?status=CREATED`, THC in transit = `status=DISPATCHED`, waiting for DRS / out for delivery = `shipments/summary` `statusCounts` (`IN_SCAN`, `OUT_FOR_DELIVERY`) for `deliveryBranchId`, delivered today = `deliveredDateFrom/To`, POD = `branchOverview.podOverview.pendingUpload`. Confirm on the live server. |
+| G8 | Login needs a company: `LoginRequest` documents `companyCode` as reserved, but `AuthService` resolves it and the web login sends it. | Login screen | App asks for company code (remembered after first login). |
 | G7 | Transporter (third-party carrier) is not a field on dispatch; dispatch takes `vehicleId` and `driverUserId` only. | THC form | Show vehicle + driver + charges only, unless a transporter master exists. |
 
 ## Needed from you
