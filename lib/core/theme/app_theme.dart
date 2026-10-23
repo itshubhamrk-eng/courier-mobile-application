@@ -18,6 +18,16 @@ class AppColors {
   static const danger = Color(0xFFC62828);
   static const info = Color(0xFF0277BD);
   static const neutral = Color(0xFF607D8B);
+
+  // Dashboard palette: one colour per operation, so each stage is recognisable at a glance.
+  static const indigo = Color(0xFF3949AB);
+  static const purple = Color(0xFF8E24AA);
+  static const teal = Color(0xFF00897B);
+  static const orange = Color(0xFFF57C00);
+  static const amber = Color(0xFFFFA000);
+  static const cyan = Color(0xFF0288D1);
+  static const pink = Color(0xFFD81B60);
+  static const green = Color(0xFF2E7D32);
 }
 
 class AppTheme {
@@ -66,7 +76,8 @@ class AppTheme {
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(48),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          // From the theme's text style so the button keeps the app font family.
+          textStyle: base.textTheme.labelLarge?.copyWith(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(

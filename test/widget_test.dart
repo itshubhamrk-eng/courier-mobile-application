@@ -74,7 +74,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Test Couriers'), findsOneWidget);
-    expect(find.text('12'), findsOneWidget);
+    expect(find.text('12'), findsWidgets, reason: 'banner and bookings card');
     expect(find.text('Book Shipment'), findsOneWidget);
     expect(find.text('Track Shipment'), findsOneWidget);
     expect(find.text('Generate THC'), findsNothing, reason: 'no MANIFEST_DISPATCH permission');

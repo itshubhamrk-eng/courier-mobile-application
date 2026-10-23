@@ -159,8 +159,11 @@ Receiving (before DRS): incoming THCs `GET /api/v1/manifests?status=DISPATCHED&d
 | POST | `/api/v1/pod/company-upload/{shipmentId}` | multipart `photo`, `signature?`, `receiverName`, `deliveryDate`, `deliveredBy`, `podDate`, `podTime`, `status` (DELIVERED\|NOT_DELIVERED\|RETURNED\|RTO), `remark` |
 | GET | `/api/v1/shipments/{shipmentId}/pod/verification` | `PodVerificationResponse` |
 
-Flow in the app: upload photo (and signature) → get URLs → call `deliver` → show the status the server returns.
-Re-uploading a file only replaces the URL; `deliver` is the single status-changing call.
+Flow in the app (same as the web delivery page): `POST /shipments/{id}/pod/verify` (multipart `photo`, `signature?`,
+`receiverName`, `awbNumber`, `shipmentNumber`, `deliveryDateTime`) → `PodVerificationResponse` (always PENDING for a branch;
+PASS / FAIL after company review) → `POST /shipment-movement/deliver` `{shipmentId, receiverName, remarks}` → show the
+returned status. Each verify call stores a new POD row, so the app reads `GET /shipments/{id}/pod/verification` first and
+reuses a PENDING / PASS one. Verify and deliver need COMPANY_ADMIN, BRANCH_MANAGER or OPERATOR.
 
 ## 9. Documents
 

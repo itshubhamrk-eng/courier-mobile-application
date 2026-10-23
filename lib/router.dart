@@ -18,6 +18,7 @@ import 'features/loading_sheet/presentation/loading_sheet_detail_page.dart';
 import 'features/loading_sheet/presentation/loading_sheets_page.dart';
 import 'features/loading_sheet/presentation/new_loading_sheet_page.dart';
 import 'features/more/more_page.dart';
+import 'features/pod/presentation/pod_page.dart';
 import 'features/shell/app_shell.dart';
 import 'features/shipments/presentation/bookings_list_page.dart';
 import 'features/shipments/presentation/shipment_detail_page.dart';
@@ -37,6 +38,7 @@ const _routePermissions = {
   '/thc': Permissions.manifestDispatch,
   '/drs/new': Permissions.deliveryAssign,
   '/receive': Permissions.manifestRead,
+  '/pod': Permissions.deliveryUpload,
 };
 
 bool _allowed(Session session, String location) {
@@ -125,19 +127,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/receive/:id',
         builder: (_, state) => ReceivePage(manifestId: state.pathParameters['id']!),
       ),
-      GoRoute(path: '/pod', builder: (_, _) => const _Later('Upload POD', 6)),
+      GoRoute(
+        path: '/pod',
+        builder: (_, state) => PodPage(shipmentId: state.uri.queryParameters['shipmentId']),
+      ),
     ],
   );
   ref.onDispose(router.dispose);
   return router;
 });
-
-class _Later extends StatelessWidget {
-  const _Later(this.title, this.phase);
-
-  final String title;
-  final int phase;
-
-  @override
-  Widget build(BuildContext context) => ComingSoonPage(title: title, phase: phase, showBack: true);
-}

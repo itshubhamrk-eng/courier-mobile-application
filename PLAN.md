@@ -96,13 +96,13 @@ same or next day. Each phase ends with your test and sign-off before the next on
 - [ ] 5.8 Print DRS: Phase 7 (G1)
 
 ### Phase 6 — POD (Nov 10 – Nov 11)
-- [ ] 6.1 Pick shipment: scan, search, or from DRS
-- [ ] 6.2 Camera capture and gallery pick, image compression
-- [ ] 6.3 Receiver name, signature pad, remarks, delivery OTP if needed
-- [ ] 6.4 Upload with progress; retry without duplicates
-- [ ] 6.5 Confirm delivery through `/deliver` only after server accepts; show server status
-- [ ] 6.6 Failed delivery with reason
-- [ ] 6.7 Tests: upload, retry, network loss mid-upload
+- [x] 6.1 Pick shipment: scan, search, or POD button on a DRS row / shipment detail; must be OUT_FOR_DELIVERY
+- [x] 6.2 Camera and gallery via image_picker (JPEG quality 70, max 1600 px); `camera` package dropped
+- [x] 6.3 Receiver name, signature pad, remarks. No delivery OTP on deliver (web sends none; partner OTP is at DRS)
+- [x] 6.4 Upload to `/shipments/{id}/pod/verify` with progress; existing pending / approved POD reused; lost answer checked before retry
+- [x] 6.5 Complete delivery via `/deliver` only after a usable POD; screen shows the status the server returns; lost answer settled by reading the shipment back
+- [ ] 6.6 Failed delivery with reason: no branch-level API (G12); app explains and points to the branch manager
+- [x] 6.7 Tests: wrong status, fresh upload, reuse, lost upload answer, rejected POD, lost deliver answer (63 tests)
 
 ### Phase 7 — Documents, testing and release (Nov 12 – Nov 17)
 - [ ] 7.1 Documents: label, loading sheet, THC, DRS, POD — server PDF if added, else built in app from API data with `pdf` package

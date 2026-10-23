@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/permissions.dart';
 import '../../../core/format.dart';
@@ -23,8 +24,20 @@ class ShipmentDetailPage extends ConsumerWidget {
     final view = ref.watch(shipmentViewByIdProvider(key));
     Future<void> refresh() => ref.refresh(shipmentViewByIdProvider(key).future);
 
+    final canPod = ref.watch(sessionProvider)?.can(Permissions.deliveryUpload) ?? false;
+    final outForDelivery = view.value?.shipment.status == 'OUT_FOR_DELIVERY';
     return Scaffold(
       appBar: AppBar(title: Text(view.value?.shipment.trackingNumber ?? 'Shipment')),
+      floatingActionButton: canPod && outForDelivery
+          ? FloatingActionButton.extended(
+              onPressed: () async {
+                await context.push('/pod?shipmentId=$shipmentId');
+                ref.invalidate(shipmentViewByIdProvider(key));
+              },
+              icon: const Icon(Icons.photo_camera_outlined),
+              label: const Text('POD'),
+            )
+          : null,
       body: switch (view) {
         AsyncData(:final value) => RefreshIndicator(
           onRefresh: refresh,
