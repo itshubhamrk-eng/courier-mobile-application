@@ -6,6 +6,8 @@ import '../../../core/format.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../../core/auth/permissions.dart';
+import '../../auth/application/auth_controller.dart';
 import '../../masters/data/masters.dart';
 import '../../thc/data/thc_repository.dart';
 import '../data/drs_repository.dart';
@@ -38,6 +40,7 @@ class DrsRunPage extends ConsumerWidget {
     final modes = ref.watch(paymentModesProvider).value ?? const <Option>[];
     final users = ref.watch(staffUsersProvider).value ?? const <StaffUser>[];
     final partner = users.where((u) => u.id == runKey.user).firstOrNull;
+    final canPod = ref.watch(sessionProvider)?.can(Permissions.deliveryUpload) ?? false;
     Future<void> refresh() => ref.refresh(drsRunDetailProvider(runKey).future);
 
     bool matches(String filter, DrsRow r) => switch (filter) {
@@ -96,7 +99,7 @@ class DrsRunPage extends ConsumerWidget {
                             padding: const EdgeInsets.all(16),
                             itemCount: rows.length,
                             separatorBuilder: (_, _) => const SizedBox(height: 8),
-                            itemBuilder: (_, i) => _RowCard(row: rows[i], modes: modes),
+                            itemBuilder: (_, i) => _RowCard(row: rows[i], modes: modes, canPod: canPod),
                           );
                         }(),
                       ),
@@ -114,10 +117,11 @@ class DrsRunPage extends ConsumerWidget {
 }
 
 class _RowCard extends StatelessWidget {
-  const _RowCard({required this.row, required this.modes});
+  const _RowCard({required this.row, required this.modes, required this.canPod});
 
   final DrsRow row;
   final List<Option> modes;
+  final bool canPod;
 
   @override
   Widget build(BuildContext context) {
@@ -169,6 +173,12 @@ class _RowCard extends StatelessWidget {
                       onPressed: () => openInMaps([row.receiverAddress, row.toCity].nonNulls.join(', ')),
                       icon: const Icon(Icons.directions_outlined),
                       label: const Text('Navigate'),
+                    ),
+                  if (row.status == 'OUT_FOR_DELIVERY' && canPod)
+                    FilledButton.tonalIcon(
+                      onPressed: () => context.push('/pod?shipmentId=${row.shipmentId}'),
+                      icon: const Icon(Icons.photo_camera_outlined),
+                      label: const Text('POD'),
                     ),
                 ],
               ),
