@@ -15,6 +15,11 @@ class ShipmentSummary {
     this.netAmount,
     this.packages,
     this.createdDate,
+    this.currentLocationId,
+    this.nextLocationId,
+    this.deliveryBranchId,
+    this.manifestId,
+    this.flowType,
   });
 
   final String id;
@@ -30,6 +35,11 @@ class ShipmentSummary {
   final num? netAmount;
   final int? packages;
   final DateTime? createdDate;
+  final String? currentLocationId;
+  final String? nextLocationId;
+  final String? deliveryBranchId;
+  final String? manifestId;
+  final String? flowType;
 
   factory ShipmentSummary.fromJson(Map<String, dynamic> j) => ShipmentSummary(
     id: j['id'] as String,
@@ -45,6 +55,11 @@ class ShipmentSummary {
     netAmount: jNum(j['netAmount']),
     packages: jInt(j['numberOfPackages']),
     createdDate: jTime(j['createdDate']),
+    currentLocationId: jStr(j['currentLocationId']),
+    nextLocationId: jStr(j['nextLocationId']),
+    deliveryBranchId: jStr(j['deliveryBranchId']),
+    manifestId: jStr(j['manifestId']),
+    flowType: jStr(j['flowType']),
   );
 }
 

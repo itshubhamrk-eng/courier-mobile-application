@@ -1,13 +1,16 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:branch_ops/app.dart';
 import 'package:branch_ops/core/network/api_client.dart';
 import 'package:branch_ops/core/network/auth_interceptor.dart';
 import 'package:branch_ops/core/storage/secure_store.dart';
 import 'package:branch_ops/features/auth/application/auth_controller.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 /// In-memory replacement for the device keystore.
 class MemoryStore extends SecureStore {
@@ -125,4 +128,49 @@ Future<AuthState> settledAuth(ProviderContainer c) async {
     await Future<void>.delayed(Duration.zero);
   }
   return c.read(authControllerProvider);
+}
+
+/// Pumps the whole app signed in (saved refresh token) against [handler] and
+/// returns its container. Unhandled paths answer `success` with null data.
+Future<ProviderContainer> pumpSignedInApp(
+  WidgetTester tester,
+  FakeHandler handler, {
+  List<String> permissions = const [
+    'DASHBOARD_READ',
+    'SHIPMENT_CREATE',
+    'SHIPMENT_READ',
+    'MANIFEST_CREATE',
+    'MANIFEST_READ',
+    'MANIFEST_DISPATCH',
+  ],
+  String branchId = 'branch-1',
+}) async {
+  tester.view.physicalSize = const Size(400, 900);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  final adapter = FakeAdapter((r) async {
+    if (r.path == '/api/v1/auth/refresh') {
+      return (status: 200, body: ok(loginJson(permissions: permissions, branchId: branchId)));
+    }
+    return handler(r);
+  });
+  Dio dio() => Dio(BaseOptions(baseUrl: 'https://api.test'))..httpClientAdapter = adapter;
+  await tester.pumpWidget(
+    ProviderScope(
+      retry: (_, _) => null,
+      overrides: [
+        secureStoreProvider.overrideWithValue(MemoryStore()..values['refresh'] = 'saved'),
+        bareDioProvider.overrideWith((ref) => dio()),
+        dioProvider.overrideWith((ref) {
+          final d = dio();
+          d.interceptors.add(AuthInterceptor(d, () => ref.read(tokenSourceProvider)));
+          return d;
+        }),
+        tokenSourceProvider.overrideWith((ref) => ref.watch(authControllerProvider.notifier)),
+      ],
+      child: const BranchOpsApp(),
+    ),
+  );
+  await tester.pumpAndSettle();
+  return ProviderScope.containerOf(tester.element(find.byType(BranchOpsApp)));
 }

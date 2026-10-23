@@ -5,7 +5,15 @@ import '../../../core/network/api_client.dart';
 import '../../../core/network/api_response.dart';
 
 class Branch {
-  const Branch({required this.id, required this.code, required this.name, this.city, this.postalCode, this.type});
+  const Branch({
+    required this.id,
+    required this.code,
+    required this.name,
+    this.city,
+    this.postalCode,
+    this.type,
+    this.assignedHubId,
+  });
 
   final String id;
   final String code;
@@ -13,6 +21,11 @@ class Branch {
   final String? city;
   final String? postalCode;
   final String? type;
+
+  /// The hub this branch normally sends to.
+  final String? assignedHubId;
+
+  bool get isHub => type == 'HUB';
 
   String get label => city == null ? name : '$name, $city';
 
@@ -23,6 +36,7 @@ class Branch {
     city: jStr(j['city']),
     postalCode: jStr(j['postalCode']),
     type: jStr(j['branchType']),
+    assignedHubId: jStr(j['assignedHubId']),
   );
 }
 
