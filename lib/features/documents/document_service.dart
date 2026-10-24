@@ -30,7 +30,7 @@ class DocumentService {
     await rootBundle.load('assets/fonts/Roboto-Bold.ttf'),
   );
 
-  String get _user => _ref.read(sessionProvider)?.displayName ?? 'Branch Operations';
+  String get _user => _ref.read(sessionProvider)?.displayName ?? 'Courier Pro';
 
   Future<Letterhead> _letterhead() async {
     final fallback = Letterhead(name: _ref.read(sessionProvider)?.companyName ?? 'Courier');

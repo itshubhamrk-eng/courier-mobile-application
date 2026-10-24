@@ -72,7 +72,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       const Icon(Icons.local_shipping_rounded, size: 56, color: AppColors.primary),
                       const SizedBox(height: 12),
                       const Text(
-                        'Branch Operations',
+                        'Courier Pro',
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
                       ),
