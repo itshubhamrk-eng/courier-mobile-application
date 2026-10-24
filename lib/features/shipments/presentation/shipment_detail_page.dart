@@ -14,6 +14,12 @@ import '../data/shipment_repository.dart';
 import '../../documents/document_page.dart';
 import '../../documents/document_service.dart';
 
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../../core/config/env.dart';
+import '../../../core/network/api_exception.dart';
+import '../data/shipment_models.dart';
+
 class ShipmentDetailPage extends ConsumerWidget {
   const ShipmentDetailPage({super.key, required this.shipmentId});
 
@@ -93,6 +99,7 @@ class ShipmentViewBody extends ConsumerWidget {
     final paymentModes = ref.watch(paymentModesProvider).value ?? const [];
     final serviceTypes = ref.watch(serviceTypesProvider).value ?? const [];
     String? branch(String? id) => id == null ? null : branches[id]?.label;
+    final canSheets = ref.watch(sessionProvider)?.can(Permissions.manifestRead) ?? false;
     String? option(List<Option> list, String? id) => list.where((o) => o.id == id).firstOrNull?.label;
 
     final timeline = _timeline(view, branch);
@@ -178,16 +185,59 @@ class ShipmentViewBody extends ConsumerWidget {
               _Row('Net amount', Fmt.money(c.netAmount), bold: true),
             ],
           ),
-        if (view.deliveryRun case final d?)
+        if (view.sheets.isNotEmpty || view.deliveryRun?.drsNumber != null)
           _Card(
-            title: 'Delivery run',
+            title: 'Loading sheet, THC and DRS',
             children: [
-              _Row('DRS', d.drsNumber),
-              _Row('Status', d.status),
-              _Row('Assigned', Fmt.dateTime(d.assignedAt)),
-              if (d.deliveredAt != null) _Row('Delivered', Fmt.dateTime(d.deliveredAt)),
-              if (d.receiverName != null) _Row('Received by', d.receiverName),
-              if (d.remarks != null) _Row('Remarks', d.remarks),
+              for (final sh in view.sheets)
+                _LinkTile(
+                  icon: sh.isOpen ? Icons.list_alt_outlined : Icons.local_shipping_outlined,
+                  // A dispatched loading sheet is the THC (same number, as on the web).
+                  title: '${sh.isOpen ? 'Loading sheet' : 'THC'} ${sh.number}',
+                  subtitle: [
+                    statusStyle(sh.status).label,
+                    '${branch(sh.bookingBranchId) ?? '–'} → ${branch(sh.deliveryBranchId) ?? '–'}',
+                    Fmt.dateTime(sh.dispatchedAt ?? sh.createdAt),
+                  ].join(' · '),
+                  onTap: canSheets ? () => context.push('/loading-sheets/${sh.id}') : null,
+                ),
+              if (view.deliveryRun case final d? when d.drsNumber != null)
+                _LinkTile(
+                  icon: Icons.delivery_dining_outlined,
+                  title: 'DRS ${d.drsNumber}',
+                  subtitle: [
+                    ?d.status,
+                    'Assigned ${Fmt.dateTime(d.assignedAt)}',
+                    if (d.deliveredAt != null) 'Delivered ${Fmt.dateTime(d.deliveredAt)}',
+                    if (d.receiverName != null) 'Received by ${d.receiverName}',
+                    ?d.remarks,
+                  ].join(' · '),
+                  onTap: d.deliveryUserId != null && d.deliveryBranchId != null && d.assignedAt != null
+                      ? () => context.push(
+                          Uri(
+                            path: '/drs/run',
+                            queryParameters: {
+                              'user': d.deliveryUserId!,
+                              'branch': d.deliveryBranchId!,
+                              'date': Fmt.apiDate(d.assignedAt!.toUtc()),
+                            },
+                          ).toString(),
+                        )
+                      : null,
+                ),
+            ],
+          ),
+        if (view.files.isNotEmpty)
+          _Card(
+            title: 'Documents',
+            children: [
+              for (final f in view.files)
+                _LinkTile(
+                  icon: f.isImage ? Icons.image_outlined : Icons.description_outlined,
+                  title: f.label,
+                  subtitle: [?f.remarks, if (f.addedAt != null) Fmt.dateTime(f.addedAt)].join(' · '),
+                  onTap: () => openShipmentFile(context, ref, f),
+                ),
             ],
           ),
         if (view.pod case final p?)
@@ -322,5 +372,63 @@ class _Row extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _LinkTile extends StatelessWidget {
+  const _LinkTile({required this.icon, required this.title, required this.subtitle, this.onTap});
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+    contentPadding: EdgeInsets.zero,
+    dense: true,
+    leading: Icon(icon, color: AppColors.primary),
+    title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+    subtitle: subtitle.isEmpty ? null : Text(subtitle),
+    trailing: onTap == null ? null : const Icon(Icons.chevron_right),
+    onTap: onTap,
+  );
+}
+
+/// Opens a shipment file: images in the app, other files (PDF, ...) in the phone's viewer.
+Future<void> openShipmentFile(BuildContext context, WidgetRef ref, ShipmentFile f) async {
+  final sameServer = f.url.startsWith('/');
+  final url = sameServer ? '${Env.apiBaseUrl}${f.url}' : f.url;
+  if (f.isImage) {
+    final token = sameServer ? ref.read(sessionProvider)?.accessToken : null;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: Text(f.label)),
+          backgroundColor: Colors.black,
+          body: InteractiveViewer(
+            child: Center(
+              child: Image.network(
+                url,
+                headers: token == null ? null : {'Authorization': 'Bearer $token'},
+                errorBuilder: (_, _, _) => const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text(
+                    'This file could not be loaded. It may need to be opened from the web app.',
+                    style: TextStyle(color: Colors.white),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    return;
+  }
+  final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+  if (!ok && context.mounted) {
+    showFailure(context, const ApiException(ApiErrorKind.unknown, 'No app on this phone can open this file.'));
   }
 }

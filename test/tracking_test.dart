@@ -145,4 +145,53 @@ void main() {
     expect(scanCandidates('https://courier.skra.in/track/AL10041'), ['AL10041']);
     expect(scanCandidates('https://courier.skra.in/track/AL10041-002'), ['AL10041-002', 'AL10041']);
   });
+
+  test('view collects documents and every loading sheet / THC the shipment was on', () async {
+    final adapter = FakeAdapter((r) async {
+      return switch (r.path) {
+        '/api/v1/shipments/s1/history' => (
+          status: 200,
+          body: ok([
+            {'status': 'MANIFEST_CREATED', 'changedAt': '2026-10-20T08:00:00Z', 'manifestId': 'm1'},
+            {'status': 'DISPATCHED', 'changedAt': '2026-10-20T10:00:00Z', 'manifestId': 'm1'},
+            {'status': 'MANIFEST_CREATED', 'changedAt': '2026-10-21T08:00:00Z', 'manifestId': 'm2'},
+          ]),
+        ),
+        '/api/v1/manifests/m1' => (
+          status: 200,
+          body: ok({'id': 'm1', 'manifestNumber': 'LS-1', 'status': 'COMPLETED', 'createdAt': '2026-10-20T08:00:00Z'}),
+        ),
+        '/api/v1/manifests/m2' => (
+          status: 200,
+          body: ok({'id': 'm2', 'manifestNumber': 'LS-2', 'status': 'CREATED', 'createdAt': '2026-10-21T08:00:00Z'}),
+        ),
+        '/api/v1/shipments/s1/documents' => (
+          status: 200,
+          body: ok([
+            {'documentType': 'INVOICE', 'documentName': null, 'documentUrl': 'https://files.test/inv.pdf'},
+          ]),
+        ),
+        _ => (status: 200, body: ok(null)),
+      };
+    });
+    const shipment = ShipmentDetail(
+      id: 's1',
+      shipmentNumber: 'B1',
+      trackingNumber: 'AWB1',
+      status: 'MANIFEST_CREATED',
+      raw: {
+        'manifestId': 'm2',
+        'shipmentImageUrl': 'https://files.test/photo.jpg',
+        'ewayBill': {'ewayBillNumber': '1811', 'documentUrl': 'https://files.test/eway.pdf'},
+      },
+    );
+
+    final view = await repo(adapter).view(shipment, withCharges: false);
+
+    expect(view.sheets.map((s) => s.number), ['LS-2', 'LS-1'], reason: 'newest first, each once');
+    expect(view.sheets.last.isOpen, isFalse, reason: 'dispatched sheet is shown as the THC');
+    expect(view.files.map((f) => f.label), ['Invoice', 'E-Way Bill 1811', 'Shipment photo']);
+    expect(view.files.last.isImage, isTrue);
+    expect(adapter.requests.where((r) => r.path == '/api/v1/manifests/m2'), hasLength(1));
+  });
 }

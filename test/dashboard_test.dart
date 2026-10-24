@@ -26,6 +26,13 @@ void main() {
       ),
       '/api/v1/manifests/summary' => (status: 200, body: ok({'totalManifests': q['status'] == 'CREATED' ? 3 : 5})),
       '/api/v1/shipments/summary' when q.containsKey('deliveredDateFrom') => (status: 200, body: ok({'totalCount': 9})),
+      '/api/v1/shipments/summary' when q.containsKey('bookingDateFrom') => (
+        status: 200,
+        body: ok({
+          'totalCount': 7,
+          'statusCounts': {'BOOKED': 6, 'CANCELLED': 1},
+        }),
+      ),
       '/api/v1/shipments/summary' => (
         status: 200,
         body: ok({
@@ -40,7 +47,11 @@ void main() {
     final adapter = FakeAdapter(server);
     final counts = await repo(adapter).load('branch-1');
 
-    expect(counts.todayBookings, 12);
+    expect(
+      counts.todayBookings,
+      6,
+      reason: 'booked today minus cancelled; statistics.todayBookings (12) is month-to-date',
+    );
     expect(counts.pendingLoading, 7);
     expect(counts.loadingSheetsOpen, 3);
     expect(counts.pendingDispatch, 2);
@@ -70,7 +81,7 @@ void main() {
 
     expect(counts.loadingSheetsOpen, isNull);
     expect(counts.thcInTransit, isNull);
-    expect(counts.todayBookings, 12);
+    expect(counts.todayBookings, 6);
     expect(counts.failures, hasLength(2));
   });
 

@@ -239,7 +239,20 @@ class Charges {
 }
 
 class DeliveryRun {
-  const DeliveryRun({this.drsNumber, this.status, this.assignedAt, this.deliveredAt, this.receiverName, this.remarks});
+  const DeliveryRun({
+    this.drsNumber,
+    this.status,
+    this.assignedAt,
+    this.deliveredAt,
+    this.receiverName,
+    this.remarks,
+    this.deliveryUserId,
+    this.deliveryBranchId,
+  });
+
+  /// With [assignedAt], identifies the run for `/shipment-movement/drs/detail`.
+  final String? deliveryUserId;
+  final String? deliveryBranchId;
 
   final String? drsNumber;
   final String? status;
@@ -255,7 +268,45 @@ class DeliveryRun {
     deliveredAt: jTime(j['deliveredAt']),
     receiverName: jStr(j['receiverName']),
     remarks: jStr(j['deliveryRemarks']),
+    deliveryUserId: jStr(j['deliveryUserId']),
+    deliveryBranchId: jStr(j['deliveryBranchId']),
   );
+}
+
+/// A file on the shipment: uploaded document (`/shipments/{id}/documents`),
+/// the E-Way Bill document or the shipment photo.
+class ShipmentFile {
+  const ShipmentFile({required this.label, required this.url, this.type, this.remarks, this.addedAt});
+
+  final String label;
+  final String url;
+
+  /// Server document type (INVOICE, EWAY_BILL, PACKING_LIST, LR_COPY, POD, ...), or PHOTO.
+  final String? type;
+  final String? remarks;
+  final DateTime? addedAt;
+
+  bool get isImage => RegExp(r'\.(jpe?g|png|webp|gif)$', caseSensitive: false).hasMatch(Uri.tryParse(url)?.path ?? url);
+
+  factory ShipmentFile.fromDocumentJson(Map<String, dynamic> j) {
+    final type = jStr(j['documentType']);
+    return ShipmentFile(
+      label: jStr(j['documentName']) ?? _typeLabel(type),
+      url: j['documentUrl'] as String? ?? '',
+      type: type,
+      remarks: jStr(j['remarks']),
+      addedAt: jTime(j['createdDate']),
+    );
+  }
+
+  static String _typeLabel(String? type) => switch (type) {
+    'INVOICE' => 'Invoice',
+    'EWAY_BILL' => 'E-Way Bill',
+    'PACKING_LIST' => 'Packing list',
+    'LR_COPY' => 'LR copy',
+    'POD' => 'Proof of delivery',
+    _ => 'Document',
+  };
 }
 
 class PodInfo {

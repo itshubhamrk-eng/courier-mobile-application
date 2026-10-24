@@ -59,13 +59,8 @@ void main() {
     final store = MemoryStore()..values['refresh'] = 'saved';
     final adapter = FakeAdapter((r) async {
       if (r.path == '/api/v1/auth/refresh') return (status: 200, body: ok(loginJson()));
-      if (r.path == '/api/v1/dashboard/summary') {
-        return (
-          status: 200,
-          body: ok({
-            'statistics': {'todayBookings': 12},
-          }),
-        );
+      if (r.path == '/api/v1/shipments/summary' && r.queryParameters.containsKey('bookingDateFrom')) {
+        return (status: 200, body: ok({'totalCount': 12}));
       }
       return (status: 200, body: ok(<String, dynamic>{}));
     });

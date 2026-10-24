@@ -164,6 +164,14 @@ class _Server {
         );
       case '/api/v1/manifests/summary':
         return (status: 200, body: ok({'totalManifests': q['status'] == 'CREATED' ? 3 : 6}));
+      case '/api/v1/shipments/summary' when q.containsKey('bookingDateFrom'):
+        return (
+          status: 200,
+          body: ok({
+            'totalCount': 38,
+            'statusCounts': {'BOOKED': 38},
+          }),
+        );
       case '/api/v1/shipments/summary':
         return q.containsKey('deliveredDateFrom')
             ? (status: 200, body: ok({'totalCount': 17}))
