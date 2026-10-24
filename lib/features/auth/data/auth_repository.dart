@@ -26,7 +26,7 @@ class AuthRepository {
       'password': password,
       'rememberMe': true,
       'deviceId': deviceId,
-      'deviceName': 'Branch Operations (Android)',
+      'deviceName': 'Courier Pro (Android)',
     },
     parse: (d) => Session.fromLoginResponse(d! as Map<String, dynamic>),
   );

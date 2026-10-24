@@ -9,7 +9,7 @@ class BranchOpsApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => MaterialApp.router(
-    title: 'Branch Operations',
+    title: 'Courier Pro',
     debugShowCheckedModeBanner: false,
     theme: AppTheme.light(),
     routerConfig: ref.watch(routerProvider),

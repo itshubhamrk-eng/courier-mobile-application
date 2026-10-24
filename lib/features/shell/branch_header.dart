@@ -68,7 +68,7 @@ class BranchHeader extends ConsumerWidget implements PreferredSizeWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  session?.companyName ?? 'Branch Operations',
+                  session?.companyName ?? 'Courier Pro',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
