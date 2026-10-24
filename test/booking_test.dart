@@ -198,7 +198,7 @@ void main() {
               'chargeableWeight': 14.4,
               'ewayBillRequired': false,
               'walletSufficient': null,
-              'charges': {'freight': 400, 'fuelCharge': 20, 'netAmount': 500},
+              'charges': {'freight': 400, 'fuelCharge': 20, 'odaCharge': 120, 'gstAmount': 30, 'netAmount': 500},
             }),
           );
         case '/api/v1/shipments' when r.method == 'POST':
@@ -374,6 +374,24 @@ void main() {
       expect(find.text('Standard (STD)'), findsOneWidget);
       expect(find.text('Paid (PAID)'), findsOneWidget);
       expect(find.text('Server price'), findsOneWidget, reason: 'charges load without picking anything');
+    });
+
+    testWidgets('ODA applied by the server shows in the ODA box and can be changed; GST in the bill', (tester) async {
+      final container = await openBooking(tester, timeoutOnCreate: false);
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      final oda = find.widgetWithText(TextField, 'ODA (₹)');
+      expect(tester.widget<TextField>(oda).controller!.text, '120', reason: 'server ODA prefilled');
+      expect(find.text('GST'), findsOneWidget);
+      expect(find.text('₹30.00'), findsOneWidget);
+      expect(container.read(bookingDraftProvider).odaChargeOverride, isNull, reason: 'not an override until edited');
+
+      await tester.enterText(oda, '80');
+      await tester.pump(const Duration(milliseconds: 800));
+      await tester.pumpAndSettle();
+      expect(container.read(bookingDraftProvider).odaChargeOverride, 80);
+      expect((previews.last.data as Map)['odaCharge'], 80, reason: 'edited ODA is sent for the server to price');
     });
 
     testWidgets('missing fields stop the first step', (tester) async {
