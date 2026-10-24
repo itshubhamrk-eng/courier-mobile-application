@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../core/config/env.dart';
 import '../../core/format.dart';
@@ -162,6 +163,10 @@ class CompanyLogo extends ConsumerWidget {
     final sameServer = raw.startsWith('/');
     final full = sameServer ? '${Env.apiBaseUrl}$raw' : raw;
     final token = sameServer ? ref.watch(sessionProvider)?.accessToken : null;
+    final headers = token == null ? null : {'Authorization': 'Bearer $token'};
+    // Logos may be uploaded as SVG (the server accepts PNG/JPEG/SVG/WEBP/ICO);
+    // Image.network cannot draw SVG.
+    final isSvg = Uri.tryParse(full)?.path.toLowerCase().endsWith('.svg') ?? false;
     return ClipRRect(
       borderRadius: BorderRadius.circular(size * 0.3),
       child: Container(
@@ -169,12 +174,15 @@ class CompanyLogo extends ConsumerWidget {
         height: size,
         color: AppColors.surface,
         padding: const EdgeInsets.all(2),
-        child: Image.network(
-          full,
-          fit: BoxFit.contain,
-          headers: token == null ? null : {'Authorization': 'Bearer $token'},
-          errorBuilder: (_, _, _) => fallback,
-        ),
+        child: isSvg
+            ? SvgPicture.network(
+                full,
+                fit: BoxFit.contain,
+                headers: headers,
+                placeholderBuilder: (_) => fallback,
+                errorBuilder: (_, _, _) => fallback,
+              )
+            : Image.network(full, fit: BoxFit.contain, headers: headers, errorBuilder: (_, _, _) => fallback),
       ),
     );
   }
