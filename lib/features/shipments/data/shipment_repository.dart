@@ -4,6 +4,7 @@ import '../../../core/format.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/api_response.dart';
+import '../../loading_sheet/data/loading_sheet_repository.dart';
 import 'shipment_models.dart';
 import '../../../core/scan_code.dart';
 
@@ -21,7 +22,15 @@ class ShipmentView {
     this.deliveryRun,
     this.pod,
     this.attempts = const [],
+    this.files = const [],
+    this.sheets = const [],
   });
+
+  /// Uploaded documents, E-Way Bill document and shipment photo.
+  final List<ShipmentFile> files;
+
+  /// Loading sheets the shipment has been on (a dispatched one is its THC), newest first.
+  final List<LoadingSheet> sheets;
 
   final ShipmentDetail shipment;
 
@@ -125,6 +134,14 @@ class ShipmentRepository {
     parse: (d) => jList(jMap(d)['content']).map(ShipmentExceptionEvent.fromJson).toList(),
   );
 
+  Future<List<ShipmentFile>> documents(String id) => _api.get(
+    '/api/v1/shipments/$id/documents',
+    parse: (d) => jList(d).map(ShipmentFile.fromDocumentJson).where((f) => f.url.isNotEmpty).toList(),
+  );
+
+  Future<LoadingSheet> sheet(String manifestId) =>
+      _api.get('/api/v1/manifests/$manifestId', parse: (d) => LoadingSheet.fromJson(jMap(d)));
+
   /// Shipment plus history (required) and the optional sections, each of which
   /// may be missing (no permission, nothing yet) without failing the screen.
   Future<ShipmentView> view(ShipmentDetail shipment, {required bool withCharges}) async {
@@ -145,15 +162,31 @@ class ShipmentRepository {
       optional(deliveryRun(id)),
       delivered ? optional(pod(id)) : Future.value(),
       optional(deliveryAttempts(id)),
+      optional(documents(id)),
     ]);
+    final events = results[0]! as List<StatusEvent>;
+    // Every sheet it has been on: the current one and those in its history (multi-hop).
+    final sheetIds = {?shipment.s('manifestId'), for (final e in events) ?e.manifestId};
+    final sheets = (await Future.wait([for (final m in sheetIds) optional(sheet(m))])).nonNulls.toList()
+      ..sort((a, b) => (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)));
+    final eway = jMap(shipment.raw['ewayBill']);
+    final files = <ShipmentFile>[
+      ...?(results[6] as List<ShipmentFile>?),
+      if (jStr(eway['documentUrl']) case final url?)
+        ShipmentFile(label: ['E-Way Bill', ?jStr(eway['ewayBillNumber'])].join(' '), url: url, type: 'EWAY_BILL'),
+      if (shipment.s('shipmentImageUrl') case final url?)
+        ShipmentFile(label: 'Shipment photo', url: url, type: 'PHOTO'),
+    ];
     return ShipmentView(
       shipment: shipment,
-      history: results[0]! as List<StatusEvent>,
+      history: events,
       exceptions: (results[1] as List<ShipmentExceptionEvent>?) ?? const [],
       charges: results[2] as Charges?,
       deliveryRun: results[3] as DeliveryRun?,
       pod: results[4] as PodInfo?,
       attempts: (results[5] as List<DeliveryAttempt>?) ?? const [],
+      files: files,
+      sheets: sheets,
     );
   }
 }

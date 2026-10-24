@@ -1,4 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/format.dart';
+
 import 'package:intl/intl.dart';
 
 import '../../../core/network/api_client.dart';
@@ -95,6 +98,15 @@ class DashboardRepository {
           parse: _map,
         ),
       ),
+      // Today's bookings at this branch. Not `statistics.todayBookings`: despite its
+      // name the server fills it month-to-date (first of the month to today).
+      attempt(
+        _api.get(
+          '/api/v1/shipments/summary',
+          query: {'bookingBranchId': branchId, 'bookingDateFrom': today, 'bookingDateTo': today},
+          parse: _map,
+        ),
+      ),
     ]);
 
     final summary = results[0] as Map<String, dynamic>?;
@@ -102,8 +114,8 @@ class DashboardRepository {
     final dispatched = results[2] as Map<String, dynamic>?;
     final delivery = results[3] as Map<String, dynamic>?;
     final delivered = results[4] as Map<String, dynamic>?;
+    final bookedToday = results[5] as Map<String, dynamic>?;
 
-    final stats = summary?['statistics'] as Map<String, dynamic>?;
     final branch = summary?['branchOverview'] as Map<String, dynamic>?;
     final pod = branch?['podOverview'] as Map<String, dynamic>?;
     final statusCounts = delivery?['statusCounts'] as Map<String, dynamic>?;
@@ -111,7 +123,7 @@ class DashboardRepository {
     if (failures.length == results.length) throw failures.first;
 
     return DashboardCounts(
-      todayBookings: _int(stats?['todayBookings']),
+      todayBookings: _bookedExcludingCancelled(bookedToday),
       pendingLoading: _int(branch?['readyForManifest']),
       loadingSheetsOpen: _int(created?['totalManifests']),
       pendingDispatch: _int(branch?['manifestsAwaitingDispatch']),
@@ -127,4 +139,11 @@ class DashboardRepository {
   static Map<String, dynamic> _map(Object? d) => d! as Map<String, dynamic>;
 
   static int? _int(Object? v) => v is num ? v.toInt() : null;
+
+  /// Total minus cancelled, same rule the server's own booking counts use.
+  static int? _bookedExcludingCancelled(Map<String, dynamic>? summary) {
+    final total = _int(summary?['totalCount']);
+    if (total == null) return null;
+    return total - (_int(jMap(summary?['statusCounts'])['CANCELLED']) ?? 0);
+  }
 }
