@@ -19,7 +19,7 @@ void main() {
       repo(adapter).byAwb(' AB/12 '),
       throwsA(isA<ApiException>().having((e) => e.kind, 'kind', ApiErrorKind.notFound)),
     );
-    expect(adapter.requests.single.uri.path, '/api/v1/shipments/track/AB%2F12');
+    expect(adapter.requests.first.uri.path, '/api/v1/shipments/track/AB%2F12');
   });
 
   test('view loads history newest first and tolerates missing optional sections', () async {
@@ -98,5 +98,51 @@ void main() {
     final s = await repo(adapter).byAwb('AL10041-003');
     expect(s.trackingNumber, 'AL10041');
     expect(adapter.requests.map((r) => r.path.split('/').last), ['AL10041-003', 'AL10041']);
+  });
+
+  test('QR with a shipment number is found through the shipment search', () async {
+    final adapter = FakeAdapter((r) async {
+      if (r.path.startsWith('/api/v1/shipments/track/')) return (status: 404, body: errorBody('not found'));
+      if (r.path == '/api/v1/shipments') {
+        return (
+          status: 200,
+          body: ok({
+            'content': [
+              {'id': 's-other', 'shipmentNumber': 'PUN-26-10411', 'trackingNumber': 'AL9', 'status': 'BOOKED'},
+              {'id': 's7', 'shipmentNumber': 'PUN-26-1041', 'trackingNumber': 'AL10041', 'status': 'BOOKED'},
+            ],
+          }),
+        );
+      }
+      if (r.path == '/api/v1/shipments/s7') {
+        return (
+          status: 200,
+          body: ok({'id': 's7', 'shipmentNumber': 'PUN-26-1041', 'trackingNumber': 'AL10041', 'status': 'BOOKED'}),
+        );
+      }
+      return (status: 500, body: errorBody('unexpected ${r.path}'));
+    });
+
+    final s = await repo(adapter).byAwb('pun-26-1041');
+
+    expect(s.trackingNumber, 'AL10041', reason: 'exact shipment number match, not the similar one');
+    expect(adapter.requests.firstWhere((r) => r.path == '/api/v1/shipments').queryParameters['search'], 'pun-26-1041');
+  });
+
+  test('unknown value is still not found after the search', () async {
+    final adapter = FakeAdapter(
+      (r) async => r.path == '/api/v1/shipments'
+          ? (status: 200, body: ok({'content': <Object>[]}))
+          : (status: 404, body: errorBody('Shipment not found')),
+    );
+    await expectLater(
+      repo(adapter).byAwb('NOPE-1'),
+      throwsA(isA<ApiException>().having((e) => e.kind, 'kind', ApiErrorKind.notFound)),
+    );
+  });
+
+  test('tracking link in a QR resolves to its number', () {
+    expect(scanCandidates('https://courier.skra.in/track/AL10041'), ['AL10041']);
+    expect(scanCandidates('https://courier.skra.in/track/AL10041-002'), ['AL10041-002', 'AL10041']);
   });
 }

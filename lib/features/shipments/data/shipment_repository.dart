@@ -64,21 +64,39 @@ class ShipmentRepository {
   Future<ShipmentDetail> byId(String id) =>
       _api.get('/api/v1/shipments/$id', parse: (d) => ShipmentDetail.fromJson(jMap(d)));
 
-  /// AWB (tracking number) lookup; the server also matches shipment numbers.
-  /// A scanned label package id (`<AWB>-001`) falls back to its AWB.
+  /// Finds a shipment from a scanned or typed value: AWB, label package id
+  /// (`<AWB>-001`), a tracking link, or a shipment number (QR codes on
+  /// consignment notes carry the shipment number). The server's track lookup
+  /// matches AWB and package id only, so a shipment number is found through
+  /// the shipment search with an exact match.
   Future<ShipmentDetail> byAwb(String awb) async {
-    final candidates = scanCandidates(awb);
-    for (var i = 0; i < candidates.length; i++) {
+    ApiException? notFound;
+    for (final candidate in scanCandidates(awb)) {
       try {
         return await _api.get(
-          '/api/v1/shipments/track/${Uri.encodeComponent(candidates[i])}',
+          '/api/v1/shipments/track/${Uri.encodeComponent(candidate)}',
           parse: (d) => ShipmentDetail.fromJson(jMap(d)),
         );
       } on ApiException catch (e) {
-        if (e.kind != ApiErrorKind.notFound || i == candidates.length - 1) rethrow;
+        if (e.kind != ApiErrorKind.notFound) rethrow;
+        notFound = e;
       }
     }
-    throw StateError('unreachable');
+    final number = scanCandidates(awb).first;
+    final hits = await _api.get(
+      '/api/v1/shipments',
+      query: {'search': number, 'size': 5},
+      parse: (d) => PageResponse.fromJson(jMap(d), ShipmentSummary.fromJson).content,
+    );
+    final match = hits
+        .where(
+          (s) =>
+              s.shipmentNumber.toLowerCase() == number.toLowerCase() ||
+              s.trackingNumber.toLowerCase() == number.toLowerCase(),
+        )
+        .firstOrNull;
+    if (match == null) throw notFound ?? const ApiException(ApiErrorKind.notFound, 'Not found.');
+    return byId(match.id);
   }
 
   Future<List<StatusEvent>> history(String id) => _api.get(
