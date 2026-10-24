@@ -49,6 +49,14 @@ android {
         }
     }
 
+    // Compress native libraries in the APK: much smaller download for sideloaded APKs.
+    // Play builds its own split APKs from the bundle, so this does not affect them.
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
     buildTypes {
         release {
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")

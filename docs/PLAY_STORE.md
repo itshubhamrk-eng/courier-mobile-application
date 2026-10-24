@@ -40,10 +40,20 @@ storeFile=/Users/<you>/keys/courier-pro-upload.jks
 Build the bundle (Play needs `.aab`, not `.apk`). Raise `--build-number` for every upload.
 
 ```bash
-flutter build appbundle --release --build-number=1 --dart-define=API_BASE_URL=https://vendor.amazinglpl.com --dart-define=APP_ENV=prod
+flutter build appbundle --release --build-number=1 --obfuscate --split-debug-info=build/symbols --dart-define=API_BASE_URL=https://vendor.amazinglpl.com --dart-define=APP_ENV=prod
 ```
 
-Output: `build/app/outputs/bundle/release/app-release.aab`. Enrol in Play App Signing when asked.
+Output: `build/app/outputs/bundle/release/app-release.aab`. Keep `build/symbols` for each release:
+it is needed to read obfuscated crash stack traces (`flutter symbolize`).
+
+Sideload APK (one per CPU type, about 11 MB each; give phones `app-arm64-v8a-release.apk`):
+
+```bash
+flutter build apk --release --split-per-abi --obfuscate --split-debug-info=build/symbols --dart-define=API_BASE_URL=https://vendor.amazinglpl.com --dart-define=APP_ENV=prod
+```
+
+Barcode scanning uses the ML Kit model from Google Play services (not bundled, saves about
+5 MB), so phones need Play services; the model downloads at install or on first scan. Enrol in Play App Signing when asked.
 
 ## 2. App access
 

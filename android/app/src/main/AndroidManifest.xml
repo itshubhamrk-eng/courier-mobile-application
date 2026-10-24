@@ -6,6 +6,11 @@
         android:label="Courier Pro"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- Barcode scanning uses the ML Kit model from Google Play services (unbundled,
+             see gradle.properties); ask Play to download it at install time. -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="barcode" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
