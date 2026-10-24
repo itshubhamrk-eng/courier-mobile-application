@@ -78,7 +78,8 @@ void main() {
       'netAmount': 492,
     });
 
-    expect(c.lines.map((l) => (l.label, l.amount)), [('Freight', 400), ('Hamali', 30), ('GST', 72), ('Discount', -10)]);
+    expect(c.lines.map((l) => (l.label, l.amount)), [('Freight', 400), ('Hamali', 30)]);
+    expect(c.adjustments.map((l) => (l.label, l.amount)), [('Discount', -10), ('GST', 72)]);
     expect(c.netAmount, 492);
   });
 

@@ -198,35 +198,40 @@ class ChargeLine {
 
 /// Server charge breakup (preview `chargeBreakup` or a booked shipment's `/charges`).
 class Charges {
-  const Charges({required this.lines, this.netAmount});
+  const Charges({required this.lines, this.adjustments = const [], this.netAmount});
 
+  /// Charge lines (freight, fuel, handling, ODA, FOV, applicable and extra charges).
   final List<ChargeLine> lines;
+
+  /// GST, discount and round off, shown after the charge lines like on a bill.
+  final List<ChargeLine> adjustments;
   final num? netAmount;
 
-  static const _labels = {
+  static const _chargeLabels = {
     'freight': 'Freight',
     'fuelCharge': 'Fuel',
     'handlingCharge': 'Handling',
     'odaCharge': 'ODA',
-    'insuranceCharge': 'Insurance',
+    'insuranceCharge': 'Insurance / FOV',
     'otherCharges': 'Other charges',
     'appointmentDeliveryCharge': 'Appointment delivery',
     'doorDeliveryCharge': 'Door delivery',
     'toPayCharge': 'To-Pay charge',
-    'gstAmount': 'GST',
+  };
+
+  static const _adjustmentLabels = {
     'discount': 'Discount',
     'discountAmount': 'Discount',
+    'gstAmount': 'GST',
     'roundOff': 'Round off',
   };
 
   /// Keeps non-zero amounts only, in server order, plus named applicable charges.
   factory Charges.fromJson(Map<String, dynamic> j) {
     final lines = <ChargeLine>[];
-    for (final e in _labels.entries) {
+    for (final e in _chargeLabels.entries) {
       final v = jNum(j[e.key]);
-      if (v != null && v != 0) {
-        lines.add(ChargeLine(e.value, e.key.startsWith('discount') ? -v.abs() : v));
-      }
+      if (v != null && v != 0) lines.add(ChargeLine(e.value, v));
       if (e.key == 'insuranceCharge') {
         for (final a in jList(j['applicableChargeLines'])) {
           final amount = jNum(a['amount']);
@@ -234,7 +239,12 @@ class Charges {
         }
       }
     }
-    return Charges(lines: lines, netAmount: jNum(j['netAmount']));
+    final adjustments = <ChargeLine>[];
+    for (final e in _adjustmentLabels.entries) {
+      final v = jNum(j[e.key]);
+      if (v != null && v != 0) adjustments.add(ChargeLine(e.value, e.key.startsWith('discount') ? -v.abs() : v));
+    }
+    return Charges(lines: lines, adjustments: adjustments, netAmount: jNum(j['netAmount']));
   }
 }
 
