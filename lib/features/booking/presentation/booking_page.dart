@@ -671,6 +671,11 @@ class _ExtraCharges extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final d = ref.watch(bookingDraftProvider);
     final defaultAppointment = ref.watch(bookingSettingsProvider).value?.defaultAppointmentCharge;
+    // ODA the server applies for this destination (shown, editable, in the ODA box).
+    final args = _previewArgs(ref, d);
+    final serverOda = args == null
+        ? null
+        : ref.watch(_previewProvider(args)).value?.charges.lines.where((l) => l.label == 'ODA').firstOrNull?.amount;
     void update(BookingDraft Function(BookingDraft x) f) => ref.read(bookingDraftProvider.notifier).update(f);
 
     return Card(
@@ -697,6 +702,8 @@ class _ExtraCharges extends ConsumerWidget {
                     label: 'ODA (₹)',
                     hint: 'As per rate',
                     value: d.odaChargeOverride,
+                    // Until edited, show the ODA the server applies; editing it overrides.
+                    serverValue: d.odaChargeOverride == null ? serverOda : null,
                     onChanged: (v) => update((x) => x.copyWith(odaChargeOverride: v)),
                   ),
                 ),
@@ -776,11 +783,20 @@ class _ExtraCharges extends ConsumerWidget {
 
 /// Money field that reports its value 700 ms after typing stops (each value re-prices).
 class _DebouncedMoney extends StatefulWidget {
-  const _DebouncedMoney({required this.label, required this.value, required this.onChanged, this.hint});
+  const _DebouncedMoney({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    this.hint,
+    this.serverValue,
+  });
 
   final String label;
   final String? hint;
   final num? value;
+
+  /// Shown in the box (editable) while the user has not typed their own amount.
+  final num? serverValue;
   final void Function(num? v) onChanged;
 
   @override
@@ -788,8 +804,27 @@ class _DebouncedMoney extends StatefulWidget {
 }
 
 class _DebouncedMoneyState extends State<_DebouncedMoney> {
-  late final _ctl = TextEditingController(text: widget.value?.toString() ?? '');
+  late final _ctl = TextEditingController(
+    text: switch (widget.value ?? widget.serverValue) {
+      final v? => _plain(v),
+      null => '',
+    },
+  );
   Timer? _timer;
+
+  /// True once the user typed here; from then on the server value no longer fills the box.
+  bool _edited = false;
+
+  @override
+  void didUpdateWidget(_DebouncedMoney old) {
+    super.didUpdateWidget(old);
+    final server = widget.serverValue;
+    if (!_edited && widget.value == null && server != old.serverValue) {
+      _ctl.text = server == null ? '' : _plain(server);
+    }
+  }
+
+  static String _plain(num v) => v % 1 == 0 ? v.toInt().toString() : v.toString();
 
   @override
   void dispose() {
@@ -805,6 +840,7 @@ class _DebouncedMoneyState extends State<_DebouncedMoney> {
     inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))],
     decoration: InputDecoration(labelText: widget.label, hintText: widget.hint),
     onChanged: (v) {
+      _edited = true;
       _timer?.cancel();
       _timer = Timer(const Duration(milliseconds: 700), () => widget.onChanged(num.tryParse(v.trim())));
     },
