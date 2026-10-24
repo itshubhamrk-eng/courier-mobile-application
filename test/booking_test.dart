@@ -98,7 +98,7 @@ void main() {
     late List<RequestOptions> creates;
     late List<RequestOptions> previews;
 
-    Future<FakeResponse> server(RequestOptions r, {required bool timeoutOnCreate}) async {
+    Future<FakeResponse> server(RequestOptions r, {required bool timeoutOnCreate, bool oldServer = false}) async {
       switch (r.path) {
         case '/api/v1/auth/refresh':
           return (status: 200, body: ok(loginJson()));
@@ -146,8 +146,25 @@ void main() {
               {'areaId': 'area-1', 'areaName': 'Satara City', 'cityName': 'Satara', 'primary': true},
             ]),
           );
+        case '/api/v1/district-level-freight/calculate':
+          return (
+            status: 200,
+            body: ok({'destinationCityName': 'Satara', 'totalFreight': 420, 'odaApplicable': false}),
+          );
+        case '/api/v1/pricing/calculate':
+          return (
+            status: 200,
+            body: ok({
+              'chargeableWeight': 14.4,
+              'chargeBreakup': {'freight': 400, 'fuelCharge': 20, 'netAmount': 500},
+            }),
+          );
         case '/api/v1/shipments/preview':
           previews.add(r);
+          if (oldServer) {
+            // Backend before V135: no preview endpoint; POST is refused on /shipments/{id}.
+            return (status: 405, body: errorBody('Method POST is not supported for this endpoint'));
+          }
           return (
             status: 200,
             body: ok({
@@ -179,13 +196,17 @@ void main() {
       }
     }
 
-    Future<ProviderContainer> openBooking(WidgetTester tester, {required bool timeoutOnCreate}) async {
+    Future<ProviderContainer> openBooking(
+      WidgetTester tester, {
+      required bool timeoutOnCreate,
+      bool oldServer = false,
+    }) async {
       creates = [];
       previews = [];
       tester.view.physicalSize = const Size(400, 900);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      final adapter = FakeAdapter((r) => server(r, timeoutOnCreate: timeoutOnCreate));
+      final adapter = FakeAdapter((r) => server(r, timeoutOnCreate: timeoutOnCreate, oldServer: oldServer));
       Dio dio() => Dio(BaseOptions(baseUrl: 'https://api.test'))..httpClientAdapter = adapter;
       await tester.pumpWidget(
         ProviderScope(
@@ -243,6 +264,26 @@ void main() {
       expect(find.text('AWB123'), findsOneWidget);
       expect(find.text('₹531.50'), findsOneWidget);
       expect(container.read(bookingDraftProvider).senderName, isEmpty, reason: 'draft cleared after booking');
+    });
+
+    testWidgets('server without the preview endpoint: estimate from the old previews, booking still works', (
+      tester,
+    ) async {
+      await openBooking(tester, timeoutOnCreate: false, oldServer: true);
+      await goToReview(tester);
+
+      expect(find.text('Charges (estimate)'), findsOneWidget);
+      expect(find.text('₹420.00'), findsOneWidget, reason: 'freight from District Level Freight');
+      expect(find.text('Net amount'), findsNothing, reason: 'no client-side total');
+      await tester.ensureVisible(find.text('Confirm booking'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Confirm booking'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Book'));
+      await tester.pumpAndSettle();
+
+      expect(creates, hasLength(1));
+      expect(find.text('AWB123'), findsOneWidget);
     });
 
     testWidgets('timeout on booking warns about duplicates, keeps the draft, does not retry', (tester) async {
