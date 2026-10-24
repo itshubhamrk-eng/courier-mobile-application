@@ -419,7 +419,13 @@ class _ReviewStepState extends ConsumerState<_ReviewStep> {
     final key = jsonEncode(d.toCreateRequest(branchId));
     if (key == _previewKey) return;
     _previewKey = key;
-    _preview = ref.read(bookingRepositoryProvider).preview(d, branchId: branchId);
+    _preview = ref
+        .read(bookingRepositoryProvider)
+        .preview(
+          d,
+          branchId: branchId,
+          minimumChargeableKg: ref.read(bookingSettingsProvider).value?.minimumChargeableKg,
+        );
   }
 
   Future<void> _book() async {
@@ -563,7 +569,7 @@ class _ReviewStepState extends ConsumerState<_ReviewStep> {
                   if (p.ewayBillRequired && d.ewayInvoiceNumber.trim().isEmpty)
                     _Warning('An E-Way Bill is required for this invoice value. Add it on the Packages step.'),
                   _SummaryCard(
-                    title: 'Charges (server preview)',
+                    title: p.exact ? 'Charges (server preview)' : 'Charges (estimate)',
                     rows: [
                       if (p.destinationCity != null) ('Destination city', p.destinationCity!),
                       if (p.actualWeight != null) ('Actual weight', Fmt.kg(p.actualWeight)),
@@ -572,12 +578,15 @@ class _ReviewStepState extends ConsumerState<_ReviewStep> {
                       if (p.slab != null) ('Rate slab', p.slab!),
                       if (p.ratePerKg != null) ('Rate per kg', Fmt.money(p.ratePerKg)),
                       for (final l in p.charges.lines) (l.label, Fmt.money(l.amount)),
-                      ('Net amount', Fmt.money(p.charges.netAmount)),
+                      if (p.exact) ('Net amount', Fmt.money(p.charges.netAmount)),
                     ],
                   ),
-                  const Text(
-                    'Priced by the server exactly as booking will price it. The AWB is generated when you book.',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  Text(
+                    p.exact
+                        ? 'Priced by the server exactly as booking will price it. The AWB is generated when you book.'
+                        : 'Estimate from the server\'s current rates. The final net amount, GST and AWB are '
+                              'calculated by the server when you book.',
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                   ),
                   const SizedBox(height: 16),
                   FilledButton.icon(

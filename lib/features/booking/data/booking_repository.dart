@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/format.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/network/api_exception.dart';
 import '../../../core/network/api_response.dart';
 import '../../shipments/data/shipment_models.dart';
 import '../application/booking_draft.dart';
@@ -82,9 +83,15 @@ class BookingPreview {
     this.ewayBillRequired = false,
     this.walletSufficient,
     this.walletAvailable,
+    this.exact = true,
   });
 
   final Charges charges;
+
+  /// False when the server has no `POST /shipments/preview` yet and the app
+  /// fell back to the separate freight and pricing previews: lines are an
+  /// estimate and there is no net amount until booking.
+  final bool exact;
   final num? actualWeight;
   final num? volumetricWeight;
   final num? chargeableWeight;
@@ -136,11 +143,77 @@ class BookingRepository {
       _api.get('/api/v1/customers/$id', parse: (d) => CustomerDetail.fromJson(jMap(d)));
 
   /// Read-only on the server (saves nothing), so safe to repeat.
-  Future<BookingPreview> preview(BookingDraft draft, {required String branchId}) => _api.post(
-    '/api/v1/shipments/preview',
-    body: draft.toCreateRequest(branchId),
-    parse: (d) => BookingPreview.fromJson(jMap(d)),
-  );
+  ///
+  /// A server without `POST /shipments/preview` (backend before V135) answers
+  /// 405 or 404; then the app falls back to the freight and pricing previews it
+  /// used before, shown as an estimate. [minimumChargeableKg] feeds only that fallback.
+  Future<BookingPreview> preview(BookingDraft draft, {required String branchId, num? minimumChargeableKg}) async {
+    try {
+      return await _api.post(
+        '/api/v1/shipments/preview',
+        body: draft.toCreateRequest(branchId),
+        parse: (d) => BookingPreview.fromJson(jMap(d)),
+      );
+    } on ApiException catch (e) {
+      if (e.statusCode != 404 && e.statusCode != 405) rethrow;
+      return _estimate(draft, branchId: branchId, minimumChargeableKg: minimumChargeableKg);
+    }
+  }
+
+  Future<BookingPreview> _estimate(BookingDraft draft, {required String branchId, num? minimumChargeableKg}) async {
+    final weight = draft.estimateChargeableWeight(minimumChargeableKg);
+    final results = await Future.wait([
+      _api.post(
+        '/api/v1/district-level-freight/calculate',
+        body: {
+          'bookingBranchId': branchId,
+          'destinationPincode': draft.deliveryPincode,
+          'destinationAreaId': draft.destinationAreaId,
+          'chargeableWeight': weight,
+          'businessCustomerId': draft.businessCustomerId,
+          'declaredValue': draft.declaredValue,
+        },
+        parse: jMap,
+      ),
+      _api.post(
+        '/api/v1/pricing/calculate',
+        body: {
+          'bookingBranchId': branchId,
+          'pickupPincode': draft.pickupPincode,
+          'deliveryPincode': draft.deliveryPincode,
+          'serviceTypeId': draft.serviceTypeId,
+          'paymentModeId': draft.paymentModeId,
+          'actualWeight': weight,
+          'totalActualWeight': draft.totalActualWeight,
+          'declaredValue': draft.declaredValue,
+          'numberOfPackages': draft.packageCount,
+        },
+        parse: jMap,
+      ),
+    ]);
+    final freight = results[0];
+    final pricing = results[1];
+    final engine = Charges.fromJson(jMap(pricing['chargeBreakup']));
+    final oda = freight['odaApplicable'] == true ? jNum(freight['odaCharge']) : null;
+    final extra = jNum(freight['customerExtraCharges']);
+    return BookingPreview(
+      exact: false,
+      chargeableWeight: jNum(pricing['chargeableWeight']) ?? weight,
+      destinationCity: jStr(freight['destinationCityName']),
+      slab: jStr(freight['weightSlabLabel']) ?? jStr(freight['customerZoneName']),
+      ratePerKg: jNum(freight['ratePerKg']),
+      // Freight and ODA from District Level Freight (what booking charges), the
+      // rest from the Pricing Engine. No total: the server adds it up on booking.
+      charges: Charges(
+        lines: [
+          if (jNum(freight['totalFreight']) case final f?) ChargeLine('Freight', f),
+          if (oda != null && oda != 0) ChargeLine('ODA', oda),
+          if (extra != null && extra > 0) ChargeLine('Customer charges', extra),
+          for (final l in engine.lines.where((l) => l.label != 'Freight' && l.label != 'ODA')) l,
+        ],
+      ),
+    );
+  }
 
   /// Not idempotent on the server: never call twice for one draft without
   /// checking the outcome of the first call.
