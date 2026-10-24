@@ -232,11 +232,19 @@ void main() {
       return container;
     }
 
+    /// Shipment (destination + packages) → Charges → Parties → Summary.
     Future<void> goToReview(WidgetTester tester) async {
       for (var i = 0; i < 3; i++) {
         await tester.tap(find.text('Next'));
         await tester.pumpAndSettle();
       }
+      // The summary is long: scroll so the charges card and Confirm are built.
+      await tester.dragUntilVisible(
+        find.text('Confirm booking'),
+        find.byType(ListView).hitTestable().first,
+        const Offset(0, -300),
+      );
+      await tester.pumpAndSettle();
     }
 
     testWidgets('walks the steps, shows server preview, books once and shows the server AWB', (tester) async {
@@ -249,6 +257,7 @@ void main() {
       expect(find.text('₹500.00'), findsOneWidget);
       expect(previews, isNotEmpty);
       expect((previews.first.data as Map)['bookingBranchId'], isNotNull, reason: 'preview sends the booking body');
+      expect((previews.first.data as Map)['senderName'], 'Preview', reason: 'charges come before parties');
       expect(find.textContaining('wallet is short'), findsNothing);
 
       await tester.ensureVisible(find.text('Confirm booking'));
@@ -302,6 +311,30 @@ void main() {
       expect(container.read(bookingDraftProvider).senderName, 'Asha Traders');
     });
 
+    testWidgets('charges show on step 2, before sender and receiver; typing names does not re-price', (tester) async {
+      final container = await openBooking(tester, timeoutOnCreate: false);
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      expect(find.text('Charges (server preview)'), findsOneWidget);
+      expect(find.text('₹500.00'), findsOneWidget);
+      final before = previews.length;
+
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      container.read(bookingDraftProvider.notifier).update((d) => d.copyWith(receiverName: 'Someone Else'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      await tester.dragUntilVisible(
+        find.text('Confirm booking'),
+        find.byType(ListView).hitTestable().first,
+        const Offset(0, -300),
+      );
+
+      expect(find.text('Confirm booking'), findsOneWidget);
+      expect(previews.length, before, reason: 'summary reuses the charges step price check');
+    });
+
     testWidgets('missing fields stop the first step', (tester) async {
       final container = await openBooking(tester, timeoutOnCreate: false);
       container.read(bookingDraftProvider.notifier).reset();
@@ -313,8 +346,8 @@ void main() {
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Enter a 10-digit mobile number'), findsNWidgets(2));
-      expect(find.text('Parties'), findsOneWidget);
+      expect(find.text('Enter a 6-digit pincode'), findsWidgets, reason: 'destination is the first step');
+      expect(find.text('Choose service type and payment mode to see charges.'), findsNothing);
     });
   });
 }

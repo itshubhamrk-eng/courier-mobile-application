@@ -611,13 +611,13 @@ void main() {
   );
 
   for (final (step, name) in [
-    (0, '05_booking_parties'),
-    (1, '06_booking_destination'),
-    (2, '07_booking_packages'),
-    (3, '08_booking_review'),
+    (0, '05_booking_shipment'),
+    (1, '06_booking_charges'),
+    (2, '07_booking_parties'),
+    (3, '08_booking_summary'),
   ]) {
     testWidgets(name, (t) async {
-      final c = await boot(t, _Server(), height: step == 3 ? 1250 : 1000);
+      final c = await boot(t, _Server(), height: step == 0 ? 1700 : (step == 3 ? 1500 : 1000));
       c.read(bookingDraftProvider.notifier).update((_) => draft);
       await go(t, c, '/bookings/new');
       for (var i = 0; i < step; i++) {

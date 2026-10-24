@@ -17,7 +17,10 @@ import '../application/booking_draft.dart';
 import '../data/booking_repository.dart';
 import '../../shell/branch_header.dart';
 
-const _steps = ['Parties', 'Destination', 'Packages', 'Review'];
+/// Destination and packages first (one step) so charges show early; sender and
+/// receiver after that, then a summary to confirm.
+const _steps = ['Shipment', 'Charges', 'Parties', 'Summary'];
+const _stepShipment = 0, _stepCharges = 1, _stepParties = 2, _stepSummary = 3;
 
 class BookingPage extends ConsumerStatefulWidget {
   const BookingPage({super.key});
@@ -28,6 +31,9 @@ class BookingPage extends ConsumerStatefulWidget {
 
 class _BookingPageState extends ConsumerState<BookingPage> {
   final _forms = List.generate(_steps.length, (_) => GlobalKey<FormState>());
+
+  /// Second form on the Shipment step (packages); validated with the destination form.
+  final _packagesForm = GlobalKey<FormState>();
   final _controllers = <String, TextEditingController>{};
   int _step = 0;
 
@@ -64,8 +70,14 @@ class _BookingPageState extends ConsumerState<BookingPage> {
   }
 
   void _next() {
-    if (!(_forms[_step].currentState?.validate() ?? true)) return;
-    if (_step == 1 &&
+    final valid = _forms[_step].currentState?.validate() ?? true;
+    final packagesValid = _step != _stepShipment || (_packagesForm.currentState?.validate() ?? true);
+    if (!valid || !packagesValid) return;
+    if (_step == _stepCharges && (_draft.serviceTypeId == null || _draft.paymentModeId == null)) {
+      showFailure(context, const ApiException(ApiErrorKind.validation, 'Choose service type and payment mode.'));
+      return;
+    }
+    if (_step == _stepShipment &&
         _draft.destinationAreaId == null &&
         ref.read(_areasProvider(_draft.deliveryPincode)).value?.isNotEmpty == true) {
       showFailure(context, const ApiException(ApiErrorKind.validation, 'Pick the destination area.'));
@@ -134,14 +146,24 @@ class _BookingPageState extends ConsumerState<BookingPage> {
               child: IndexedStack(
                 index: _step,
                 children: [
+                  _scroll(
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const _Section('Destination'),
+                        _destinationStep(),
+                        const _Section('Packages'),
+                        _packagesStep(),
+                      ],
+                    ),
+                  ),
+                  _ChargesStep(businessCustomer: _businessCustomerPicker()),
                   _scroll(_partiesStep()),
-                  _scroll(_destinationStep()),
-                  _scroll(_packagesStep()),
-                  _ReviewStep(onEdit: (s) => setState(() => _step = s)),
+                  _SummaryStep(onEdit: (s) => setState(() => _step = s)),
                 ],
               ),
             ),
-            if (_step < 3)
+            if (_step < _stepSummary)
               SafeArea(
                 top: false,
                 child: Padding(
@@ -176,25 +198,28 @@ class _BookingPageState extends ConsumerState<BookingPage> {
 
   // ---------------------------------------------------------------- step 1
 
+  /// On the charges step: a business customer changes the rates (customer zone
+  /// pricing) and the default payment mode, and prefills the sender.
+  Widget _businessCustomerPicker() => _BusinessCustomerPicker(
+    selectedName: _draft.businessCustomerName,
+    onPicked: (detail) {
+      _update((x) => x.copyWith(businessCustomerId: detail?.id, businessCustomerName: detail?.name));
+      if (detail == null) return;
+      _controllers['senderName']?.text = detail.name;
+      if (detail.mobile != null) _controllers['senderContact']?.text = detail.mobile!;
+      final address = detail.pickupAddresses.firstOrNull ?? detail.billingAddress;
+      if (address != null) _controllers['senderAddress']?.text = address;
+      _applyCustomerPaymentMode(detail.defaultPaymentMode);
+    },
+  );
+
   Widget _partiesStep() {
     final d = _draft;
     return Form(
-      key: _forms[0],
+      key: _forms[_stepParties],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _BusinessCustomerPicker(
-            selectedName: d.businessCustomerName,
-            onPicked: (detail) {
-              _update((x) => x.copyWith(businessCustomerId: detail?.id, businessCustomerName: detail?.name));
-              if (detail == null) return;
-              _controllers['senderName']?.text = detail.name;
-              if (detail.mobile != null) _controllers['senderContact']?.text = detail.mobile!;
-              final address = detail.pickupAddresses.firstOrNull ?? detail.billingAddress;
-              if (address != null) _controllers['senderAddress']?.text = address;
-              _applyCustomerPaymentMode(detail.defaultPaymentMode);
-            },
-          ),
           const _Section('Sender (consignor)'),
           _PartyFields(
             prefix: 'sender',
@@ -235,7 +260,7 @@ class _BookingPageState extends ConsumerState<BookingPage> {
     final areas = _isPincode(pincode) ? ref.watch(_areasProvider(pincode)) : null;
 
     return Form(
-      key: _forms[1],
+      key: _forms[_stepShipment],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -309,7 +334,7 @@ class _BookingPageState extends ConsumerState<BookingPage> {
     final needsEway = d.ewayBillNeeded(settings?.ewayBillThreshold);
 
     return Form(
-      key: _forms[2],
+      key: _packagesForm,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -398,37 +423,144 @@ final _areasProvider = FutureProvider.autoDispose.family<List<PincodeArea>, Stri
 
 // ------------------------------------------------------------------ review
 
-class _ReviewStep extends ConsumerStatefulWidget {
-  const _ReviewStep({required this.onEdit});
+/// One server price check shared by the charges and summary steps. Keyed by the
+/// booking body with placeholder sender / receiver (pricing never reads them), so
+/// typing names on the parties step does not re-price.
+class _PreviewArgs {
+  _PreviewArgs(this.draft, this.branchId, this.minimumKg) : key = jsonEncode(previewBody(draft, branchId));
+
+  final BookingDraft draft;
+  final String branchId;
+  final num? minimumKg;
+  final String key;
+
+  @override
+  bool operator ==(Object other) => other is _PreviewArgs && other.key == key;
+
+  @override
+  int get hashCode => key.hashCode;
+}
+
+final _previewProvider = FutureProvider.autoDispose.family<BookingPreview, _PreviewArgs>(
+  (ref, a) =>
+      ref.watch(bookingRepositoryProvider).preview(a.draft, branchId: a.branchId, minimumChargeableKg: a.minimumKg),
+);
+
+_PreviewArgs? _previewArgs(WidgetRef ref, BookingDraft d) {
+  final branchId = ref.read(sessionProvider)?.operatingBranchId;
+  if (branchId == null || d.serviceTypeId == null || d.paymentModeId == null) return null;
+  return _PreviewArgs(d, branchId, ref.watch(bookingSettingsProvider).value?.minimumChargeableKg);
+}
+
+/// Step 3: service, payment mode, optional business customer, and the server's charges.
+class _ChargesStep extends ConsumerWidget {
+  const _ChargesStep({required this.businessCustomer});
+
+  final Widget businessCustomer;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final d = ref.watch(bookingDraftProvider);
+    final args = _previewArgs(ref, d);
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        businessCustomer,
+        const SizedBox(height: 12),
+        _OptionDropdown(
+          label: 'Service type',
+          options: ref.watch(serviceTypesProvider),
+          value: d.serviceTypeId,
+          onRetry: () => ref.invalidate(serviceTypesProvider),
+          onChanged: (v) => ref.read(bookingDraftProvider.notifier).update((x) => x.copyWith(serviceTypeId: v)),
+        ),
+        const SizedBox(height: 12),
+        _OptionDropdown(
+          label: 'Payment mode',
+          options: ref.watch(paymentModesProvider),
+          value: d.paymentModeId,
+          onRetry: () => ref.invalidate(paymentModesProvider),
+          onChanged: (v) => ref.read(bookingDraftProvider.notifier).update((x) => x.copyWith(paymentModeId: v)),
+        ),
+        const SizedBox(height: 16),
+        if (args == null)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Text('Choose service type and payment mode to see charges.'),
+          )
+        else
+          _PreviewCard(args: args, draft: d),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+}
+
+/// Charges from the server for [args], with wallet / E-Way Bill warnings.
+class _PreviewCard extends ConsumerWidget {
+  const _PreviewCard({required this.args, required this.draft, this.onEdit});
+
+  final _PreviewArgs args;
+  final BookingDraft draft;
+  final VoidCallback? onEdit;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => switch (ref.watch(_previewProvider(args))) {
+    AsyncData(value: final p) => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (p.walletSufficient == false)
+          _Warning(
+            'Branch wallet is short for this booking'
+            '${p.walletAvailable != null ? ' (available ${Fmt.money(p.walletAvailable)})' : ''}. '
+            'Booking will be refused until the wallet is topped up.',
+          ),
+        if (p.ewayBillRequired && draft.ewayInvoiceNumber.trim().isEmpty)
+          _Warning('An E-Way Bill is required for this invoice value. Add it on the Shipment step.'),
+        _SummaryCard(
+          title: p.exact ? 'Charges (server preview)' : 'Charges (estimate)',
+          onEdit: onEdit,
+          rows: [
+            if (p.destinationCity != null) ('Destination city', p.destinationCity!),
+            if (p.actualWeight != null) ('Actual weight', Fmt.kg(p.actualWeight)),
+            if ((p.volumetricWeight ?? 0) > 0) ('Volumetric weight', Fmt.kg(p.volumetricWeight)),
+            ('Chargeable weight', Fmt.kg(p.chargeableWeight)),
+            if (p.slab != null) ('Rate slab', p.slab!),
+            if (p.ratePerKg != null) ('Rate per kg', Fmt.money(p.ratePerKg)),
+            for (final l in p.charges.lines) (l.label, Fmt.money(l.amount)),
+            if (p.exact) ('Net amount', Fmt.money(p.charges.netAmount)),
+          ],
+        ),
+        Text(
+          p.exact
+              ? 'Priced by the server exactly as booking will price it. The AWB is generated when you book.'
+              : 'Estimate from the server\'s current rates. The final net amount, GST and AWB are '
+                    'calculated by the server when you book.',
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+        ),
+      ],
+    ),
+    AsyncError(:final error) => ErrorView(error: error, onRetry: () => ref.invalidate(_previewProvider(args))),
+    _ => const Padding(
+      padding: EdgeInsets.all(24),
+      child: Center(child: CircularProgressIndicator()),
+    ),
+  };
+}
+
+/// Step 5: everything entered, the server's charges, then confirm.
+class _SummaryStep extends ConsumerStatefulWidget {
+  const _SummaryStep({required this.onEdit});
 
   final void Function(int step) onEdit;
 
   @override
-  ConsumerState<_ReviewStep> createState() => _ReviewStepState();
+  ConsumerState<_SummaryStep> createState() => _SummaryStepState();
 }
 
-class _ReviewStepState extends ConsumerState<_ReviewStep> {
-  Future<BookingPreview>? _preview;
-  String? _previewKey;
-
+class _SummaryStepState extends ConsumerState<_SummaryStep> {
   /// True while the create request is in flight; blocks a second submit.
   bool _submitting = false;
-
-  /// Re-price whenever anything in the booking body changes.
-  void _refreshPreviewIfNeeded(BookingDraft d) {
-    final branchId = ref.read(sessionProvider)?.operatingBranchId;
-    if (branchId == null || d.serviceTypeId == null || d.paymentModeId == null) return;
-    final key = jsonEncode(d.toCreateRequest(branchId));
-    if (key == _previewKey) return;
-    _previewKey = key;
-    _preview = ref
-        .read(bookingRepositoryProvider)
-        .preview(
-          d,
-          branchId: branchId,
-          minimumChargeableKg: ref.read(bookingSettingsProvider).value?.minimumChargeableKg,
-        );
-  }
 
   Future<void> _book() async {
     final d = ref.read(bookingDraftProvider);
@@ -447,6 +579,7 @@ class _ReviewStepState extends ConsumerState<_ReviewStep> {
     try {
       final shipment = await ref.read(bookingRepositoryProvider).create(d, branchId: branchId);
       ref.read(bookingDraftProvider.notifier).reset();
+      ref.invalidate(branchWalletProvider);
       if (mounted) context.pushReplacement('/bookings/done/${shipment.id}');
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -487,41 +620,17 @@ class _ReviewStepState extends ConsumerState<_ReviewStep> {
   @override
   Widget build(BuildContext context) {
     final d = ref.watch(bookingDraftProvider);
-    final services = ref.watch(serviceTypesProvider);
-    final payments = ref.watch(paymentModesProvider);
-    _refreshPreviewIfNeeded(d);
+    final args = _previewArgs(ref, d);
+    final services = ref.watch(serviceTypesProvider).value ?? const <Option>[];
+    final payments = ref.watch(paymentModesProvider).value ?? const <Option>[];
+    String? label(List<Option> list, String? id) => list.where((o) => o.id == id).firstOrNull?.label;
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _OptionDropdown(
-          label: 'Service type',
-          options: services,
-          value: d.serviceTypeId,
-          onRetry: () => ref.invalidate(serviceTypesProvider),
-          onChanged: (v) => ref.read(bookingDraftProvider.notifier).update((x) => x.copyWith(serviceTypeId: v)),
-        ),
-        const SizedBox(height: 12),
-        _OptionDropdown(
-          label: 'Payment mode',
-          options: payments,
-          value: d.paymentModeId,
-          onRetry: () => ref.invalidate(paymentModesProvider),
-          onChanged: (v) => ref.read(bookingDraftProvider.notifier).update((x) => x.copyWith(paymentModeId: v)),
-        ),
-        const SizedBox(height: 16),
-        _SummaryCard(
-          title: 'Parties',
-          onEdit: () => widget.onEdit(0),
-          rows: [
-            if (d.businessCustomerName != null) ('Customer', d.businessCustomerName!),
-            ('Sender', '${d.senderName} · ${d.senderContact}'),
-            ('Receiver', '${d.receiverName} · ${d.receiverContact}'),
-          ],
-        ),
         _SummaryCard(
           title: 'Destination',
-          onEdit: () => widget.onEdit(1),
+          onEdit: () => widget.onEdit(_stepShipment),
           rows: [
             ('From', d.pickupPincode),
             ('To', [d.deliveryPincode, d.destinationAreaLabel].nonNulls.join(' · ')),
@@ -530,82 +639,48 @@ class _ReviewStepState extends ConsumerState<_ReviewStep> {
         ),
         _SummaryCard(
           title: 'Packages',
-          onEdit: () => widget.onEdit(2),
+          onEdit: () => widget.onEdit(_stepShipment),
           rows: [
             ('Packages', '${d.packageCount} (${d.totalQuantity} pcs)'),
             ('Actual weight', Fmt.kg(d.totalActualWeight)),
             ('Declared value', Fmt.money(d.declaredValue)),
             if (d.invoiceValue != null) ('Invoice value', Fmt.money(d.invoiceValue)),
+            if (d.ewayInvoiceNumber.trim().isNotEmpty) ('E-Way Bill invoice', d.ewayInvoiceNumber.trim()),
           ],
         ),
-        if (d.serviceTypeId == null || d.paymentModeId == null)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Text('Choose service type and payment mode to see charges.'),
-          )
-        else if (_preview != null)
-          FutureBuilder<BookingPreview>(
-            future: _preview,
-            builder: (context, snap) {
-              if (snap.connectionState != ConnectionState.done) {
-                return const Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-              if (snap.hasError) {
-                return Column(
-                  children: [ErrorView(error: snap.error!, onRetry: () => setState(() => _previewKey = null))],
-                );
-              }
-              final p = snap.data!;
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (p.walletSufficient == false)
-                    _Warning(
-                      'Branch wallet is short for this booking'
-                      '${p.walletAvailable != null ? ' (available ${Fmt.money(p.walletAvailable)})' : ''}. '
-                      'Booking will be refused until the wallet is topped up.',
-                    ),
-                  if (p.ewayBillRequired && d.ewayInvoiceNumber.trim().isEmpty)
-                    _Warning('An E-Way Bill is required for this invoice value. Add it on the Packages step.'),
-                  _SummaryCard(
-                    title: p.exact ? 'Charges (server preview)' : 'Charges (estimate)',
-                    rows: [
-                      if (p.destinationCity != null) ('Destination city', p.destinationCity!),
-                      if (p.actualWeight != null) ('Actual weight', Fmt.kg(p.actualWeight)),
-                      if ((p.volumetricWeight ?? 0) > 0) ('Volumetric weight', Fmt.kg(p.volumetricWeight)),
-                      ('Chargeable weight', Fmt.kg(p.chargeableWeight)),
-                      if (p.slab != null) ('Rate slab', p.slab!),
-                      if (p.ratePerKg != null) ('Rate per kg', Fmt.money(p.ratePerKg)),
-                      for (final l in p.charges.lines) (l.label, Fmt.money(l.amount)),
-                      if (p.exact) ('Net amount', Fmt.money(p.charges.netAmount)),
-                    ],
-                  ),
-                  Text(
-                    p.exact
-                        ? 'Priced by the server exactly as booking will price it. The AWB is generated when you book.'
-                        : 'Estimate from the server\'s current rates. The final net amount, GST and AWB are '
-                              'calculated by the server when you book.',
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton.icon(
-                    onPressed: _submitting ? null : _book,
-                    icon: _submitting
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                          )
-                        : const Icon(Icons.check),
-                    label: Text(_submitting ? 'Booking…' : 'Confirm booking'),
-                  ),
-                ],
-              );
-            },
-          ),
+        _SummaryCard(
+          title: 'Service and payment',
+          onEdit: () => widget.onEdit(_stepCharges),
+          rows: [
+            if (d.businessCustomerName != null) ('Business customer', d.businessCustomerName!),
+            ('Service', label(services, d.serviceTypeId) ?? '–'),
+            ('Payment', label(payments, d.paymentModeId) ?? '–'),
+          ],
+        ),
+        _SummaryCard(
+          title: 'Sender and receiver',
+          onEdit: () => widget.onEdit(_stepParties),
+          rows: [
+            ('Sender', [d.senderName, d.senderContact].where((s) => s.trim().isNotEmpty).join(' · ')),
+            if (d.senderAddress.trim().isNotEmpty) ('', d.senderAddress.trim()),
+            ('Receiver', [d.receiverName, d.receiverContact].where((s) => s.trim().isNotEmpty).join(' · ')),
+            if (d.receiverAddress.trim().isNotEmpty) ('', d.receiverAddress.trim()),
+            if (d.remarks.trim().isNotEmpty) ('Remarks', d.remarks.trim()),
+          ],
+        ),
+        if (args != null) _PreviewCard(args: args, draft: d, onEdit: () => widget.onEdit(_stepCharges)),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          onPressed: _submitting || args == null ? null : _book,
+          icon: _submitting
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                )
+              : const Icon(Icons.check),
+          label: Text(_submitting ? 'Booking…' : 'Confirm booking'),
+        ),
         const SizedBox(height: 24),
       ],
     );

@@ -120,6 +120,21 @@ class BookingPreview {
   );
 }
 
+/// Booking body for `POST /shipments/preview`. Charges are shown before the
+/// sender and receiver are entered; the server validates those fields but never
+/// prices on them, so the preview sends fixed placeholders. The real booking
+/// (`create`) always sends the real, validated details.
+Map<String, dynamic> previewBody(BookingDraft draft, String branchId) => {
+  ...draft.toCreateRequest(branchId),
+  'senderName': 'Preview',
+  'senderContact': '0000000000',
+  'senderAddress': 'Preview',
+  'receiverName': 'Preview',
+  'receiverContact': '0000000000',
+  'receiverAddress': 'Preview',
+  'remarks': null,
+};
+
 final bookingRepositoryProvider = Provider<BookingRepository>((ref) => BookingRepository(ref.watch(apiClientProvider)));
 
 class BookingRepository {
@@ -151,7 +166,7 @@ class BookingRepository {
     try {
       return await _api.post(
         '/api/v1/shipments/preview',
-        body: draft.toCreateRequest(branchId),
+        body: previewBody(draft, branchId),
         parse: (d) => BookingPreview.fromJson(jMap(d)),
       );
     } on ApiException catch (e) {
