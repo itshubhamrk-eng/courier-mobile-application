@@ -234,5 +234,68 @@ void main() {
     expect(find.text('Not delivered (1)'), findsOneWidget);
     expect(find.text('Collect ₹250.00 (COD)'), findsOneWidget);
     expect(find.text('Navigate'), findsOneWidget);
+    expect(find.text('Could not deliver'), findsNothing, reason: 'needs DELIVERY_DELIVER or DELIVERY_UPLOAD');
+  });
+
+  test('run summary reads failedCount', () {
+    final run = DrsRun.fromJson({
+      'deliveryUserId': 'u9',
+      'deliveryBranchId': 'b1',
+      'runDate': '2026-10-23',
+      'shipmentCount': 5,
+      'deliveredCount': 2,
+      'pendingCount': 1,
+      'failedCount': 2,
+    });
+    expect(run.failedCount, 2);
+    expect(DrsRun.fromJson({'deliveryUserId': 'u', 'deliveryBranchId': 'b', 'runDate': '2026-10-23'}).failedCount, 0);
+  });
+
+  testWidgets('run view: failed delivery from an out-for-delivery row, then reloads', (tester) async {
+    var status = 'OUT_FOR_DELIVERY';
+    final fails = <RequestOptions>[];
+    final container = await pumpSignedInApp(tester, permissions: [..._perms, 'DELIVERY_DELIVER'], (r) async {
+      return switch (r.path) {
+        '/api/v1/shipment-movement/drs/detail' => (
+          status: 200,
+          body: ok({
+            'drsNumber': 'DRS-77',
+            'shipments': [
+              {'shipmentId': 's1', 'trackingNumber': 'AWB1', 'status': status, 'receiverName': 'Ravi'},
+              {'shipmentId': 's2', 'trackingNumber': 'AWB2', 'status': 'DELIVERED', 'receiverName': 'Asha'},
+            ],
+          }),
+        ),
+        '/api/v1/shipments/s1/delivery-attempts' => (status: 200, body: ok(<Object>[])),
+        '/api/v1/shipment-movement/s1/delivery-failed' => () {
+          fails.add(r);
+          status = 'IN_SCAN';
+          return (
+            status: 200,
+            body: ok({'attemptNo': 1, 'maxAttempts': 3, 'reason': 'ADDRESS_NOT_FOUND', 'outcome': 'RETRY'}),
+          );
+        }(),
+        '/api/v1/master/payment-modes' => (status: 200, body: _paymentModes),
+        _ => (status: 200, body: ok(null)),
+      };
+    });
+    unawaited(container.read(routerProvider).push('/drs/run?user=u9&branch=branch-1&date=2026-10-23'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Could not deliver'), findsOneWidget, reason: 'only on the out-for-delivery row');
+    await tester.tap(find.text('Could not deliver'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Address not found'));
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Record'));
+    await tester.pumpAndSettle();
+
+    expect(fails.single.data, {'reason': 'ADDRESS_NOT_FOUND', 'remarks': null});
+    expect(find.text('Attempt 1 of 3 recorded'), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(find.text('Pending (0)'), findsOneWidget, reason: 'run reloaded from the server');
+    expect(find.text('Could not deliver'), findsNothing);
   });
 }

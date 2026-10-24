@@ -53,6 +53,7 @@ class DrsRun {
     this.shipmentCount = 0,
     this.deliveredCount = 0,
     this.pendingCount = 0,
+    this.failedCount = 0,
   });
 
   final String deliveryUserId;
@@ -63,6 +64,9 @@ class DrsRun {
   final int deliveredCount;
   final int pendingCount;
 
+  /// Failed attempts on this run; not counted as pending.
+  final int failedCount;
+
   factory DrsRun.fromJson(Map<String, dynamic> j) => DrsRun(
     deliveryUserId: j['deliveryUserId'] as String,
     deliveryBranchId: j['deliveryBranchId'] as String,
@@ -71,6 +75,7 @@ class DrsRun {
     shipmentCount: jInt(j['shipmentCount']) ?? 0,
     deliveredCount: jInt(j['deliveredCount']) ?? 0,
     pendingCount: jInt(j['pendingCount']) ?? 0,
+    failedCount: jInt(j['failedCount']) ?? 0,
   );
 }
 

@@ -118,4 +118,16 @@ class PodRepository {
         },
         parse: (d) => ShipmentDetail.fromJson(jMap(d)),
       );
+
+  /// Records a failed attempt. Not idempotent: each call adds an attempt (the
+  /// 3rd returns the shipment to origin), so never call twice without checking.
+  Future<DeliveryAttempt> deliveryFailed({
+    required String shipmentId,
+    required FailureReason reason,
+    String? remarks,
+  }) => _api.post(
+    '/api/v1/shipment-movement/$shipmentId/delivery-failed',
+    body: {'reason': reason.code, 'remarks': (remarks == null || remarks.trim().isEmpty) ? null : remarks.trim()},
+    parse: (d) => DeliveryAttempt.fromJson(jMap(d)),
+  );
 }

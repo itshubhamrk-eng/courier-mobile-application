@@ -63,7 +63,9 @@ void main() {
     });
 
     test('walletSufficient stays null when the mode does not collect at booking', () {
-      final p = BookingPreview.fromJson({'charges': {'netAmount': 1}});
+      final p = BookingPreview.fromJson({
+        'charges': {'netAmount': 1},
+      });
       expect(p.walletSufficient, isNull);
       expect(p.ewayBillRequired, isFalse);
     });

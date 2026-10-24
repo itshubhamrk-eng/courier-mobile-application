@@ -328,6 +328,20 @@ class _Server {
           status: 200,
           body: ok({'drsNumber': 'DRS-PUN-0091', 'status': 'ASSIGNED', 'assignedAt': '2026-10-23T06:45:00Z'}),
         );
+      case '/api/v1/shipments/s1035/delivery-attempts':
+        return (
+          status: 200,
+          body: ok([
+            {
+              'attemptNo': 1,
+              'maxAttempts': 3,
+              'reason': 'CUSTOMER_UNAVAILABLE',
+              'outcome': 'RETRY',
+              'drsNumber': 'DRS-PUN-0088',
+              'attemptedAt': '2026-10-22T11:20:00Z',
+            },
+          ]),
+        );
       case '/api/v1/shipments/s1035/pod/verification':
         return pod == null ? (status: 404, body: errorBody('none')) : (status: 200, body: ok(pod));
       case '/api/v1/shipments/new1':
@@ -437,7 +451,8 @@ class _Server {
               'drsNumber': 'DRS-PUN-0091',
               'shipmentCount': 12,
               'deliveredCount': 7,
-              'pendingCount': 5,
+              'pendingCount': 4,
+              'failedCount': 1,
             },
             {
               'deliveryUserId': 'u1',

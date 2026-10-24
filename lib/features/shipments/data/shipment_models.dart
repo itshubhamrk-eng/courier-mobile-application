@@ -284,3 +284,57 @@ class PodInfo {
     remark: jStr(j['remark']),
   );
 }
+
+/// Why a delivery attempt failed (`DeliveryFailureReason`). [other] needs remarks.
+enum FailureReason {
+  customerRefused('CUSTOMER_REFUSED', 'Customer refused'),
+  addressNotFound('ADDRESS_NOT_FOUND', 'Address not found'),
+  customerUnavailable('CUSTOMER_UNAVAILABLE', 'Customer not available'),
+  rescheduleRequested('RESCHEDULE_REQUESTED', 'Customer asked to reschedule'),
+  paymentNotReady('PAYMENT_NOT_READY', 'Payment not ready'),
+  other('OTHER', 'Other');
+
+  const FailureReason(this.code, this.label);
+
+  final String code;
+  final String label;
+
+  static String labelOf(String? code) =>
+      values.where((r) => r.code == code).firstOrNull?.label ?? (code ?? 'Unknown reason');
+}
+
+/// One failed delivery attempt (`DeliveryAttemptResponse`).
+class DeliveryAttempt {
+  const DeliveryAttempt({
+    required this.attemptNo,
+    required this.maxAttempts,
+    this.reason,
+    this.remarks,
+    this.outcome,
+    this.drsNumber,
+    this.attemptedAt,
+  });
+
+  final int attemptNo;
+  final int maxAttempts;
+  final String? reason;
+  final String? remarks;
+
+  /// RETRY: back at the branch for the next DRS. RTO: shipment RETURNED.
+  final String? outcome;
+  final String? drsNumber;
+  final DateTime? attemptedAt;
+
+  bool get returnedToOrigin => outcome == 'RTO';
+  String get reasonLabel => FailureReason.labelOf(reason);
+
+  factory DeliveryAttempt.fromJson(Map<String, dynamic> j) => DeliveryAttempt(
+    attemptNo: jInt(j['attemptNo']) ?? 0,
+    maxAttempts: jInt(j['maxAttempts']) ?? 0,
+    reason: jStr(j['reason']),
+    remarks: jStr(j['remarks']),
+    outcome: jStr(j['outcome']),
+    drsNumber: jStr(j['drsNumber']),
+    attemptedAt: jTime(j['attemptedAt']),
+  );
+}
