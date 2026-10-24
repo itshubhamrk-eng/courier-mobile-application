@@ -212,6 +212,33 @@ class ShipmentViewBody extends ConsumerWidget {
                 ),
             ],
           ),
+        if (view.attempts.isNotEmpty)
+          _Card(
+            title: 'Delivery attempts',
+            children: [
+              for (final a in view.attempts)
+                ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    a.returnedToOrigin ? Icons.keyboard_return : Icons.event_repeat,
+                    color: a.returnedToOrigin ? AppColors.danger : AppColors.warning,
+                  ),
+                  title: Text(
+                    'Attempt ${a.attemptNo} of ${a.maxAttempts}: ${a.reasonLabel}',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    [
+                      Fmt.dateTime(a.attemptedAt),
+                      ?a.drsNumber,
+                      if (a.returnedToOrigin) 'Returned to origin' else 'Back for next DRS',
+                      ?a.remarks,
+                    ].join(' · '),
+                  ),
+                ),
+            ],
+          ),
         _Card(
           title: 'Movement',
           children: [

@@ -17,6 +17,7 @@ import '../../masters/data/masters.dart';
 import '../../shipments/data/shipment_models.dart';
 import '../../shipments/data/shipment_repository.dart';
 import '../data/pod_repository.dart';
+import 'failed_delivery.dart';
 
 /// Picks the camera / gallery image. Overridable in tests.
 final podImagePickerProvider = Provider<Future<Uint8List?> Function(ImageSource source)>((ref) {
@@ -205,18 +206,23 @@ class _PodPageState extends ConsumerState<PodPage> {
     }
   }
 
-  void _cannotDeliver() => showDialog<void>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Could not deliver?'),
-      content: const Text(
-        'The server does not yet let branch staff record a failed delivery (refused, address not found, '
-        'customer away). The shipment stays out for delivery.\n\n'
-        'Tell your branch manager; they can record it from the web app.',
-      ),
-      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
-    ),
-  );
+  Future<void> _cannotDeliver() async {
+    final s = _shipment;
+    if (s == null) return;
+    final attempt = await recordFailedDelivery(context, ref, shipmentId: s.id, trackingNumber: s.trackingNumber);
+    if (attempt == null || !mounted) return;
+    // The shipment is no longer out for delivery: nothing left to do here.
+    if (widget.shipmentId != null && context.canPop()) {
+      context.pop(true);
+    } else {
+      setState(() {
+        _shipment = null;
+        _pod = null;
+        _photo = null;
+        _awb.clear();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -411,11 +417,12 @@ class _PodPageState extends ConsumerState<PodPage> {
         ),
       ],
       const SizedBox(height: 8),
-      TextButton.icon(
-        onPressed: _cannotDeliver,
-        icon: const Icon(Icons.report_problem_outlined, color: AppColors.danger),
-        label: const Text('Could not deliver?', style: TextStyle(color: AppColors.danger)),
-      ),
+      if (canRecordFailedDelivery(ref))
+        TextButton.icon(
+          onPressed: _delivering || _uploading ? null : _cannotDeliver,
+          icon: const Icon(Icons.report_problem_outlined, color: AppColors.danger),
+          label: const Text('Could not deliver?', style: TextStyle(color: AppColors.danger)),
+        ),
     ];
   }
 }

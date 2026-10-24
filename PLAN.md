@@ -57,7 +57,7 @@ same or next day. Each phase ends with your test and sign-off before the next on
 - [x] 2.3 Destination pincode serviceability check
 - [x] 2.4 Package details: quantity, weight, L × W × H (multiple pieces)
 - [x] 2.5 Service type and payment mode from server
-- [x] 2.6 Freight and charges previews from server; booking summary screen (final net amount from server after booking, see G9)
+- [x] 2.6 Booking summary priced by `POST /shipments/preview` (G9/G10 resolved): server weights, charge lines and net amount; wallet-short and E-Way-Bill warnings
 - [x] 2.7 Submit once (double-tap guard, no auto-retry; timeout warns to check Bookings), show AWB
 - [x] 2.8 Shipment list (bookings tab) and shipment detail
 - [x] 2.9 Track screen: AWB search + barcode / QR scan
@@ -101,7 +101,7 @@ same or next day. Each phase ends with your test and sign-off before the next on
 - [x] 6.3 Receiver name, signature pad, remarks. No delivery OTP on deliver (web sends none; partner OTP is at DRS)
 - [x] 6.4 Upload to `/shipments/{id}/pod/verify` with progress; existing pending / approved POD reused; lost answer checked before retry
 - [x] 6.5 Complete delivery via `/deliver` only after a usable POD; screen shows the status the server returns; lost answer settled by reading the shipment back
-- [ ] 6.6 Failed delivery with reason: no branch-level API (G12); app explains and points to the branch manager
+- [x] 6.6 Failed delivery with reason (G12 resolved): form on POD and on out-for-delivery DRS rows → `/shipment-movement/{id}/delivery-failed`; attempt n of 3 or returned to origin; lost answer checked, never retried. Shipment detail lists attempts; DRS runs show failed count (75 tests)
 - [x] 6.7 Tests: wrong status, fresh upload, reuse, lost upload answer, rejected POD, lost deliver answer (63 tests)
 
 ### Phase 7 — Documents, testing and release

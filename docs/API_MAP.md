@@ -74,7 +74,7 @@ Card → source:
 | GET | `/api/v1/master/service-types` | paged |
 | GET | `/api/v1/master/payment-modes` | paged, `cashOnDelivery` filter |
 | GET | `/api/v1/branches/directory` | all active branches for pickers |
-| POST | `/api/v1/pricing/calculate` | `PricingRequest` → `PricingResponse { chargeableWeight, volumetricWeight, chargeBreakup, … }` |
+| POST | `/api/v1/shipments/preview` | same body as `POST /shipments` → `ShipmentPreviewResponse { actualWeight, volumetricWeight, chargeableWeight, destinationCityName, weightSlabLabel, ratePerKg, ewayBillRequired, walletSufficient, walletAvailable, charges (ShipmentChargeResponse incl. netAmount) }`. Saves nothing. Used by the booking summary (replaced `/pricing/calculate` + `/district-level-freight/calculate`) |
 | POST | `/api/v1/shipments` | `CreateShipmentRequest` → `ShipmentResponse` (`shipmentNumber`, `trackingNumber` = AWB) |
 | GET | `/api/v1/shipments/{id}`, `/{id}/charges`, `/{id}/items` | detail |
 | GET | `/api/v1/shipments?…` | `PageResponse<ShipmentSummaryResponse>` |
@@ -93,6 +93,7 @@ deliveryType (DOOR|OFFICE), deliveryBranchId, destinationAreaId, businessCustome
 | GET | `/api/v1/shipments/{id}/timeline` | step list, completed/pending with time and user |
 | GET | `/api/v1/shipments/{id}/history` | `[ShipmentStatusHistoryResponse { status, previousStatus, remarks, branchId, manifestId, vehicleId, changedBy, changedAt }]` |
 | GET | `/api/v1/shipments/{id}/delivery-run` | DRS the shipment is on, or null |
+| GET | `/api/v1/shipments/{id}/delivery-attempts` | `[DeliveryAttemptResponse { attemptNo, maxAttempts, reason, remarks, outcome (RETRY\|RTO), drsNumber, attemptedAt, … }]`, oldest first |
 | GET | `/api/v1/shipments/{id}/pod/verification` | POD photo, signature, status |
 | GET | `/api/v1/hub-operations/exceptions?…` | hold / misroute / damaged / short / missing |
 
@@ -138,7 +139,7 @@ When the sheet's booking branch is a HUB, every shipment must first be out-scann
 | Method | Path | Body / params |
 |---|---|---|
 | POST | `/api/v1/shipment-movement/out-for-delivery` | `{ shipmentIds[], deliveryUserId, vehicleId, fuelCost, deliveryCharge }` → `BulkMovementResponse { results[], successCount, failureCount, drsNumber }` |
-| GET | `/api/v1/shipment-movement/drs?from&to&deliveryBranchId` | `[DrsSummaryResponse { deliveryUserId, runDate, drsNumber, shipmentCount, deliveredCount, pendingCount }]` |
+| GET | `/api/v1/shipment-movement/drs?from&to&deliveryBranchId` | `[DrsSummaryResponse { deliveryUserId, runDate, drsNumber, shipmentCount, deliveredCount, pendingCount, failedCount }]` |
 | GET | `/api/v1/shipment-movement/drs/detail?deliveryUserId&deliveryBranchId&runDate` | `DrsDetailResponse { drsNumber, shipments[] }` |
 
 Eligible shipments (as the web Out For Delivery page): `deliveryBranchId=<branch>&status=IN_SCAN`; at a hub, hub direct:
@@ -156,6 +157,7 @@ Receiving (before DRS): incoming THCs `GET /api/v1/manifests?status=DISPATCHED&d
 | POST | `/api/v1/shipment-movement/{shipmentId}/pod-upload` | multipart `file`, `kind` = `PHOTO`\|`SIGNATURE` → `{ url }` (upload only, no status change) |
 | POST | `/api/v1/shipment-movement/delivery-otp/request` / `/verify` | `{ deliveryUserId }` / OTP |
 | POST | `/api/v1/shipment-movement/deliver` | `{ shipmentId, receiverName, remarks, otp, signatureUrl, photoUrl }` → `ShipmentResponse` (status change) |
+| POST | `/api/v1/shipment-movement/{shipmentId}/delivery-failed` | `{ reason (CUSTOMER_REFUSED\|ADDRESS_NOT_FOUND\|CUSTOMER_UNAVAILABLE\|RESCHEDULE_REQUESTED\|PAYMENT_NOT_READY\|OTHER), remarks (required for OTHER) }` → `DeliveryAttemptResponse`. OUT_FOR_DELIVERY only; attempts 1–2 back to IN_SCAN (READY_FOR_MANIFEST hub direct), 3rd RETURNED. Not idempotent |
 | POST | `/api/v1/pod/company-upload/{shipmentId}` | multipart `photo`, `signature?`, `receiverName`, `deliveryDate`, `deliveredBy`, `podDate`, `podTime`, `status` (DELIVERED\|NOT_DELIVERED\|RETURNED\|RTO), `remark` |
 | GET | `/api/v1/shipments/{shipmentId}/pod/verification` | `PodVerificationResponse` |
 

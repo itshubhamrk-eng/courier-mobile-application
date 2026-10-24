@@ -172,7 +172,8 @@ class _RunsTab extends ConsumerWidget {
                     title: Text(r.drsNumber ?? 'DRS', style: const TextStyle(fontWeight: FontWeight.w700)),
                     subtitle: Text(
                       '${partner(r.deliveryUserId)} · ${Fmt.date(r.runDate)}\n'
-                      '${r.shipmentCount} shipments · ${r.deliveredCount} delivered · ${r.pendingCount} pending',
+                      '${r.shipmentCount} shipments · ${r.deliveredCount} delivered · ${r.pendingCount} pending'
+                      '${r.failedCount > 0 ? ' · ${r.failedCount} failed' : ''}',
                     ),
                     isThreeLine: true,
                     trailing: _Progress(done: r.deliveredCount, total: r.shipmentCount),

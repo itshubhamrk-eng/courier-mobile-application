@@ -20,6 +20,7 @@ class ShipmentView {
     this.charges,
     this.deliveryRun,
     this.pod,
+    this.attempts = const [],
   });
 
   final ShipmentDetail shipment;
@@ -32,6 +33,9 @@ class ShipmentView {
   final Charges? charges;
   final DeliveryRun? deliveryRun;
   final PodInfo? pod;
+
+  /// Failed delivery attempts, oldest first.
+  final List<DeliveryAttempt> attempts;
 }
 
 class ShipmentRepository {
@@ -91,6 +95,12 @@ class ShipmentRepository {
   Future<PodInfo?> pod(String id) =>
       _api.get('/api/v1/shipments/$id/pod/verification', parse: (d) => d == null ? null : PodInfo.fromJson(jMap(d)));
 
+  /// Failed delivery attempts, oldest first; empty when none.
+  Future<List<DeliveryAttempt>> deliveryAttempts(String id) => _api.get(
+    '/api/v1/shipments/$id/delivery-attempts',
+    parse: (d) => jList(d).map(DeliveryAttempt.fromJson).toList(),
+  );
+
   Future<List<ShipmentExceptionEvent>> exceptions(String id) => _api.get(
     '/api/v1/hub-operations/exceptions',
     query: {'shipmentId': id, 'size': 50},
@@ -116,6 +126,7 @@ class ShipmentRepository {
       withCharges ? optional(charges(id)) : Future.value(),
       optional(deliveryRun(id)),
       delivered ? optional(pod(id)) : Future.value(),
+      optional(deliveryAttempts(id)),
     ]);
     return ShipmentView(
       shipment: shipment,
@@ -124,6 +135,7 @@ class ShipmentRepository {
       charges: results[2] as Charges?,
       deliveryRun: results[3] as DeliveryRun?,
       pod: results[4] as PodInfo?,
+      attempts: (results[5] as List<DeliveryAttempt>?) ?? const [],
     );
   }
 }

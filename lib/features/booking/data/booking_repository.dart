@@ -68,24 +68,49 @@ class CustomerDetail {
   }
 }
 
-/// Server previews. Neither is trusted at booking: the server reprices on create.
+/// `POST /shipments/preview`: priced by the same code as booking, nothing saved.
+/// Shown as sent; the app adds nothing up itself.
 class BookingPreview {
-  const BookingPreview({required this.freight, required this.charges, required this.chargeableWeight});
+  const BookingPreview({
+    required this.charges,
+    this.actualWeight,
+    this.volumetricWeight,
+    this.chargeableWeight,
+    this.destinationCity,
+    this.slab,
+    this.ratePerKg,
+    this.ewayBillRequired = false,
+    this.walletSufficient,
+    this.walletAvailable,
+  });
 
-  /// `/district-level-freight/calculate`.
-  final Map<String, dynamic> freight;
-
-  /// `/pricing/calculate` `chargeBreakup` (fuel, handling, insurance, applicable charges, GST...).
   final Charges charges;
+  final num? actualWeight;
+  final num? volumetricWeight;
   final num? chargeableWeight;
+  final String? destinationCity;
+  final String? slab;
+  final num? ratePerKg;
 
-  String? get destinationCity => jStr(freight['destinationCityName']);
-  String? get slab => jStr(freight['weightSlabLabel']) ?? jStr(freight['customerZoneName']);
-  num? get ratePerKg => jNum(freight['ratePerKg']);
-  num? get baseFreight => jNum(freight['baseFreight']);
-  num? get odaCharge => freight['odaApplicable'] == true ? jNum(freight['odaCharge']) : null;
-  num? get totalFreight => jNum(freight['totalFreight']);
-  num? get customerExtraCharges => jNum(freight['customerExtraCharges']);
+  /// An E-Way Bill must be entered before booking.
+  final bool ewayBillRequired;
+
+  /// Null unless the payment mode collects at booking.
+  final bool? walletSufficient;
+  final num? walletAvailable;
+
+  factory BookingPreview.fromJson(Map<String, dynamic> j) => BookingPreview(
+    charges: Charges.fromJson(jMap(j['charges'])),
+    actualWeight: jNum(j['actualWeight']),
+    volumetricWeight: jNum(j['volumetricWeight']),
+    chargeableWeight: jNum(j['chargeableWeight']),
+    destinationCity: jStr(j['destinationCityName']),
+    slab: jStr(j['weightSlabLabel']),
+    ratePerKg: jNum(j['ratePerKg']),
+    ewayBillRequired: j['ewayBillRequired'] == true,
+    walletSufficient: j['walletSufficient'] as bool?,
+    walletAvailable: jNum(j['walletAvailable']),
+  );
 }
 
 final bookingRepositoryProvider = Provider<BookingRepository>((ref) => BookingRepository(ref.watch(apiClientProvider)));
@@ -110,44 +135,12 @@ class BookingRepository {
   Future<CustomerDetail> customer(String id) =>
       _api.get('/api/v1/customers/$id', parse: (d) => CustomerDetail.fromJson(jMap(d)));
 
-  Future<BookingPreview> preview(BookingDraft draft, {required String branchId, required num chargeableWeight}) async {
-    final results = await Future.wait([
-      _api.post(
-        '/api/v1/district-level-freight/calculate',
-        body: {
-          'bookingBranchId': branchId,
-          'destinationPincode': draft.deliveryPincode,
-          'destinationAreaId': draft.destinationAreaId,
-          'chargeableWeight': chargeableWeight,
-          'businessCustomerId': draft.businessCustomerId,
-          'declaredValue': draft.declaredValue,
-        },
-        parse: jMap,
-      ),
-      _api.post(
-        '/api/v1/pricing/calculate',
-        body: {
-          'bookingBranchId': branchId,
-          'pickupPincode': draft.pickupPincode,
-          'deliveryPincode': draft.deliveryPincode,
-          'serviceTypeId': draft.serviceTypeId,
-          'paymentModeId': draft.paymentModeId,
-          // Same inputs the web booking screen sends: chargeable as actualWeight so the
-          // engine does not re-derive volumetric from blended totals.
-          'actualWeight': chargeableWeight,
-          'totalActualWeight': draft.totalActualWeight,
-          'declaredValue': draft.declaredValue,
-          'numberOfPackages': draft.packageCount,
-        },
-        parse: jMap,
-      ),
-    ]);
-    return BookingPreview(
-      freight: results[0],
-      charges: Charges.fromJson(jMap(results[1]['chargeBreakup'])),
-      chargeableWeight: jNum(results[1]['chargeableWeight']),
-    );
-  }
+  /// Read-only on the server (saves nothing), so safe to repeat.
+  Future<BookingPreview> preview(BookingDraft draft, {required String branchId}) => _api.post(
+    '/api/v1/shipments/preview',
+    body: draft.toCreateRequest(branchId),
+    parse: (d) => BookingPreview.fromJson(jMap(d)),
+  );
 
   /// Not idempotent on the server: never call twice for one draft without
   /// checking the outcome of the first call.

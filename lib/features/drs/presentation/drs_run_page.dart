@@ -11,6 +11,7 @@ import '../../auth/application/auth_controller.dart';
 import '../../masters/data/masters.dart';
 import '../../thc/data/thc_repository.dart';
 import '../data/drs_repository.dart';
+import '../../pod/presentation/failed_delivery.dart';
 import 'drs_widgets.dart';
 import '../../documents/document_page.dart';
 import '../../documents/document_service.dart';
@@ -43,6 +44,7 @@ class DrsRunPage extends ConsumerWidget {
     final users = ref.watch(staffUsersProvider).value ?? const <StaffUser>[];
     final partner = users.where((u) => u.id == runKey.user).firstOrNull;
     final canPod = ref.watch(sessionProvider)?.can(Permissions.deliveryUpload) ?? false;
+    final canFail = canRecordFailedDelivery(ref);
     Future<void> refresh() => ref.refresh(drsRunDetailProvider(runKey).future);
 
     bool matches(String filter, DrsRow r) => switch (filter) {
@@ -122,7 +124,13 @@ class DrsRunPage extends ConsumerWidget {
                             padding: const EdgeInsets.all(16),
                             itemCount: rows.length,
                             separatorBuilder: (_, _) => const SizedBox(height: 8),
-                            itemBuilder: (_, i) => _RowCard(row: rows[i], modes: modes, canPod: canPod),
+                            itemBuilder: (_, i) => _RowCard(
+                              row: rows[i],
+                              modes: modes,
+                              canPod: canPod,
+                              canFail: canFail,
+                              onChanged: refresh,
+                            ),
                           );
                         }(),
                       ),
@@ -139,15 +147,23 @@ class DrsRunPage extends ConsumerWidget {
   }
 }
 
-class _RowCard extends StatelessWidget {
-  const _RowCard({required this.row, required this.modes, required this.canPod});
+class _RowCard extends ConsumerWidget {
+  const _RowCard({
+    required this.row,
+    required this.modes,
+    required this.canPod,
+    required this.canFail,
+    required this.onChanged,
+  });
 
   final DrsRow row;
   final List<Option> modes;
   final bool canPod;
+  final bool canFail;
+  final Future<void> Function() onChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final collect = collectLabel(row.paymentModeId, row.netAmount, modes);
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -202,6 +218,20 @@ class _RowCard extends StatelessWidget {
                       onPressed: () => context.push('/pod?shipmentId=${row.shipmentId}'),
                       icon: const Icon(Icons.photo_camera_outlined),
                       label: const Text('POD'),
+                    ),
+                  if (row.status == 'OUT_FOR_DELIVERY' && canFail)
+                    TextButton.icon(
+                      onPressed: () async {
+                        final a = await recordFailedDelivery(
+                          context,
+                          ref,
+                          shipmentId: row.shipmentId,
+                          trackingNumber: row.trackingNumber,
+                        );
+                        if (a != null) await onChanged();
+                      },
+                      icon: const Icon(Icons.report_problem_outlined, color: AppColors.danger),
+                      label: const Text('Could not deliver', style: TextStyle(color: AppColors.danger)),
                     ),
                 ],
               ),

@@ -104,23 +104,6 @@ class BookingDraft {
 
   bool ewayBillNeeded(num? threshold) => threshold != null && (invoiceValue ?? 0) >= threshold;
 
-  /// Chargeable weight to feed the two preview endpoints, using the server's
-  /// own rule (`ShipmentServiceImpl.summariseWeight`): per-item volumetric
-  /// L×W×H/5000 × quantity, max(actual, volumetric, company minimum), 3 dp.
-  /// Only a preview input; the server recomputes it on booking.
-  num previewChargeableWeight(num? minimumKg) {
-    double r3(double v) => (v * 1000).roundToDouble() / 1000;
-    final actual = r3(totalActualWeight.toDouble());
-    var volumetric = 0.0;
-    for (final i in items) {
-      if (i.hasDimensions) volumetric += r3(i.length! * i.width! * i.height! / 5000) * i.quantity;
-    }
-    volumetric = r3(volumetric);
-    var chargeable = actual > volumetric ? actual : volumetric;
-    if (minimumKg != null && minimumKg > chargeable) chargeable = minimumKg.toDouble();
-    return chargeable;
-  }
-
   Map<String, dynamic> toCreateRequest(String branchId) {
     String? t(String s) => s.trim().isEmpty ? null : s.trim();
     return {
