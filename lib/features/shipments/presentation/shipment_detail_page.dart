@@ -180,7 +180,7 @@ class ShipmentViewBody extends ConsumerWidget {
           _Card(
             title: 'Charges',
             children: [
-              for (final l in c.lines) _Row(l.label, Fmt.money(l.amount)),
+              for (final l in [...c.lines, ...c.adjustments]) _Row(l.label, Fmt.money(l.amount)),
               const Divider(),
               _Row('Net amount', Fmt.money(c.netAmount), bold: true),
             ],

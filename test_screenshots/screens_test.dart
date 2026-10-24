@@ -617,7 +617,7 @@ void main() {
     (3, '08_booking_summary'),
   ]) {
     testWidgets(name, (t) async {
-      final c = await boot(t, _Server(), height: step == 0 ? 1700 : (step == 3 ? 1500 : 1000));
+      final c = await boot(t, _Server(), height: step == 0 ? 1700 : (step == 3 ? 1600 : (step == 1 ? 1500 : 1000)));
       c.read(bookingDraftProvider.notifier).update((_) => draft);
       await go(t, c, '/bookings/new');
       for (var i = 0; i < step; i++) {

@@ -1,6 +1,5 @@
-import 'dart:convert';
-
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -490,13 +489,15 @@ class _ChargesStep extends ConsumerWidget {
           )
         else
           _PreviewCard(args: args, draft: d),
+        const SizedBox(height: 4),
+        const _ExtraCharges(),
         const SizedBox(height: 24),
       ],
     );
   }
 }
 
-/// Charges from the server for [args], with wallet / E-Way Bill warnings.
+/// Charges from the server for [args] as a bill, with wallet / E-Way Bill warnings.
 class _PreviewCard extends ConsumerWidget {
   const _PreviewCard({required this.args, required this.draft, this.onEdit});
 
@@ -517,27 +518,7 @@ class _PreviewCard extends ConsumerWidget {
           ),
         if (p.ewayBillRequired && draft.ewayInvoiceNumber.trim().isEmpty)
           _Warning('An E-Way Bill is required for this invoice value. Add it on the Shipment step.'),
-        _SummaryCard(
-          title: p.exact ? 'Charges (server preview)' : 'Charges (estimate)',
-          onEdit: onEdit,
-          rows: [
-            if (p.destinationCity != null) ('Destination city', p.destinationCity!),
-            if (p.actualWeight != null) ('Actual weight', Fmt.kg(p.actualWeight)),
-            if ((p.volumetricWeight ?? 0) > 0) ('Volumetric weight', Fmt.kg(p.volumetricWeight)),
-            ('Chargeable weight', Fmt.kg(p.chargeableWeight)),
-            if (p.slab != null) ('Rate slab', p.slab!),
-            if (p.ratePerKg != null) ('Rate per kg', Fmt.money(p.ratePerKg)),
-            for (final l in p.charges.lines) (l.label, Fmt.money(l.amount)),
-            if (p.exact) ('Net amount', Fmt.money(p.charges.netAmount)),
-          ],
-        ),
-        Text(
-          p.exact
-              ? 'Priced by the server exactly as booking will price it. The AWB is generated when you book.'
-              : 'Estimate from the server\'s current rates. The final net amount, GST and AWB are '
-                    'calculated by the server when you book.',
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
-        ),
+        _Invoice(preview: p, onEdit: onEdit, extrasPending: !p.exact && draft.hasExtraCharges),
       ],
     ),
     AsyncError(:final error) => ErrorView(error: error, onRetry: () => ref.invalidate(_previewProvider(args))),
@@ -546,6 +527,268 @@ class _PreviewCard extends ConsumerWidget {
       child: Center(child: CircularProgressIndicator()),
     ),
   };
+}
+
+/// Bill layout: charge lines, then GST / discount / round off, then the net amount.
+/// Every figure is the server's; nothing is added up here.
+class _Invoice extends StatelessWidget {
+  const _Invoice({required this.preview, this.onEdit, this.extrasPending = false});
+
+  final BookingPreview preview;
+  final VoidCallback? onEdit;
+
+  /// Extra charges were entered but the estimate endpoints cannot price them.
+  final bool extrasPending;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = preview;
+    const amountStyle = TextStyle(fontWeight: FontWeight.w600, fontFeatures: [FontFeature.tabularFigures()]);
+    Widget row(String label, num amount, {TextStyle? style}) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: style)),
+          Text(Fmt.money(amount), style: style ?? amountStyle),
+        ],
+      ),
+    );
+    final meta = [
+      if (p.destinationCity != null) p.destinationCity!,
+      'Chargeable ${Fmt.kg(p.chargeableWeight)}',
+      if (p.ratePerKg != null) '${Fmt.money(p.ratePerKg)}/kg',
+      if (p.slab != null) 'Slab ${p.slab}',
+    ].join(' · ');
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text('Charges', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: (p.exact ? AppColors.success : AppColors.warning).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    p.exact ? 'Server price' : 'Estimate',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: p.exact ? AppColors.success : AppColors.warning,
+                    ),
+                  ),
+                ),
+                if (onEdit != null) TextButton(onPressed: onEdit, child: const Text('Edit')),
+              ],
+            ),
+            Text(meta, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+            const SizedBox(height: 10),
+            const Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'DESCRIPTION',
+                    style: TextStyle(fontSize: 11, letterSpacing: 0.6, color: AppColors.textSecondary),
+                  ),
+                ),
+                Text('AMOUNT', style: TextStyle(fontSize: 11, letterSpacing: 0.6, color: AppColors.textSecondary)),
+              ],
+            ),
+            const Divider(height: 12),
+            for (final l in p.charges.lines) row(l.label, l.amount),
+            if (p.charges.adjustments.isNotEmpty) ...[
+              const Divider(height: 14),
+              for (final l in p.charges.adjustments)
+                row(l.label, l.amount, style: const TextStyle(color: AppColors.textSecondary)),
+            ],
+            const Divider(height: 18, thickness: 1.4, color: AppColors.textPrimary),
+            if (p.exact && p.charges.netAmount != null)
+              row(
+                'Net amount',
+                p.charges.netAmount!,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              )
+            else
+              const Text(
+                'Net amount: calculated by the server when you book.',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            const SizedBox(height: 8),
+            Text(
+              extrasPending
+                  ? 'Additional charges you entered are added by the server when you book.'
+                  : p.exact
+                  ? 'Priced by the server exactly as booking will price it.'
+                  : 'Estimate from the server\'s current rates; final GST and total are set at booking.',
+              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Extra charges and options, as on the web booking form. Typed amounts are
+/// sent after a short pause so the server is not asked on every keystroke.
+class _ExtraCharges extends ConsumerWidget {
+  const _ExtraCharges();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final d = ref.watch(bookingDraftProvider);
+    final defaultAppointment = ref.watch(bookingSettingsProvider).value?.defaultAppointmentCharge;
+    void update(BookingDraft Function(BookingDraft x) f) => ref.read(bookingDraftProvider.notifier).update(f);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('Additional charges', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _DebouncedMoney(
+                    label: 'Other (₹)',
+                    value: d.otherCharges,
+                    onChanged: (v) => update((x) => x.copyWith(otherCharges: v)),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _DebouncedMoney(
+                    label: 'ODA (₹)',
+                    hint: 'As per rate',
+                    value: d.odaChargeOverride,
+                    onChanged: (v) => update((x) => x.copyWith(odaChargeOverride: v)),
+                  ),
+                ),
+              ],
+            ),
+            if (d.deliveryType == 'DOOR') ...[
+              const SizedBox(height: 10),
+              _DebouncedMoney(
+                label: 'Door delivery charge (₹)',
+                value: d.doorDeliveryCharge,
+                onChanged: (v) => update((x) => x.copyWith(doorDeliveryCharge: v)),
+              ),
+            ],
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: d.insuranceApplicable,
+              onChanged: (v) => update((x) => x.copyWith(insuranceApplicable: v)),
+              title: const Text('Insurance / FOV'),
+              subtitle: const Text('2% of invoice value, added by the server'),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: d.appointmentDelivery,
+              onChanged: (v) => update(
+                (x) => x.copyWith(
+                  appointmentDelivery: v,
+                  appointmentDeliveryCharge: v ? (x.appointmentDeliveryCharge ?? defaultAppointment) : null,
+                  appointmentDate: v ? x.appointmentDate : null,
+                  appointmentTimeSlot: v ? x.appointmentTimeSlot : '',
+                ),
+              ),
+              title: const Text('Appointment delivery'),
+            ),
+            if (d.appointmentDelivery) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final now = DateTime.now();
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: d.appointmentDate ?? now.add(const Duration(days: 1)),
+                          firstDate: now,
+                          lastDate: now.add(const Duration(days: 60)),
+                        );
+                        if (picked != null) update((x) => x.copyWith(appointmentDate: picked));
+                      },
+                      icon: const Icon(Icons.event),
+                      label: Text(d.appointmentDate == null ? 'Pick date' : Fmt.date(d.appointmentDate)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _DebouncedMoney(
+                      label: 'Charge (₹)',
+                      value: d.appointmentDeliveryCharge,
+                      onChanged: (v) => update((x) => x.copyWith(appointmentDeliveryCharge: v)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                initialValue: d.appointmentTimeSlot,
+                decoration: const InputDecoration(labelText: 'Time slot (e.g. 10 AM – 1 PM)'),
+                onChanged: (v) => update((x) => x.copyWith(appointmentTimeSlot: v)),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Money field that reports its value 700 ms after typing stops (each value re-prices).
+class _DebouncedMoney extends StatefulWidget {
+  const _DebouncedMoney({required this.label, required this.value, required this.onChanged, this.hint});
+
+  final String label;
+  final String? hint;
+  final num? value;
+  final void Function(num? v) onChanged;
+
+  @override
+  State<_DebouncedMoney> createState() => _DebouncedMoneyState();
+}
+
+class _DebouncedMoneyState extends State<_DebouncedMoney> {
+  late final _ctl = TextEditingController(text: widget.value?.toString() ?? '');
+  Timer? _timer;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _ctl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => TextField(
+    controller: _ctl,
+    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))],
+    decoration: InputDecoration(labelText: widget.label, hintText: widget.hint),
+    onChanged: (v) {
+      _timer?.cancel();
+      _timer = Timer(const Duration(milliseconds: 700), () => widget.onChanged(num.tryParse(v.trim())));
+    },
+  );
 }
 
 /// Step 5: everything entered, the server's charges, then confirm.
@@ -655,6 +898,15 @@ class _SummaryStepState extends ConsumerState<_SummaryStep> {
             if (d.businessCustomerName != null) ('Business customer', d.businessCustomerName!),
             ('Service', label(services, d.serviceTypeId) ?? '–'),
             ('Payment', label(payments, d.paymentModeId) ?? '–'),
+            if (d.insuranceApplicable) ('Insurance / FOV', 'Yes'),
+            if (d.appointmentDelivery)
+              (
+                'Appointment',
+                [
+                  Fmt.date(d.appointmentDate),
+                  d.appointmentTimeSlot.trim(),
+                ].where((x) => x.isNotEmpty && x != '–').join(' · '),
+              ),
           ],
         ),
         _SummaryCard(

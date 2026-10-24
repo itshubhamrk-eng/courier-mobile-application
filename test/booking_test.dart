@@ -55,7 +55,8 @@ void main() {
       });
       expect(p.chargeableWeight, 14.4);
       expect(p.slab, '10-20 kg');
-      expect(p.charges.lines.map((l) => l.label), ['Freight', 'Fuel', 'Hamali', 'GST', 'Round off']);
+      expect(p.charges.lines.map((l) => l.label), ['Freight', 'Fuel', 'Hamali']);
+      expect(p.charges.adjustments.map((l) => l.label), ['GST', 'Round off']);
       expect(p.charges.netAmount, 551, reason: 'net amount from the server, never summed in the app');
       expect(p.ewayBillRequired, isTrue);
       expect(p.walletSufficient, isFalse);
@@ -84,6 +85,31 @@ void main() {
         expect(body.containsKey(k), isFalse, reason: '$k must come from the server');
       }
       expect(body.containsKey('ewayBill'), isFalse);
+    });
+
+    test('extra charges are sent for the server to price; door charge only for door delivery', () {
+      final d = _ready.copyWith(
+        otherCharges: 50,
+        odaChargeOverride: 120,
+        doorDeliveryCharge: 40,
+        insuranceApplicable: true,
+        appointmentDelivery: true,
+        appointmentDate: DateTime(2026, 10, 30),
+        appointmentTimeSlot: ' 10 AM - 1 PM ',
+        appointmentDeliveryCharge: 75,
+      );
+      final body = d.toCreateRequest('b');
+      expect(body['otherCharges'], 50);
+      expect(body['odaCharge'], 120);
+      expect(body['doorDeliveryCharge'], 40);
+      expect(body['insuranceApplicable'], true);
+      expect(body['appointmentDate'], '2026-10-30');
+      expect(body['appointmentTimeSlot'], '10 AM - 1 PM');
+      expect(body['appointmentDeliveryCharge'], 75);
+      expect(d.copyWith(deliveryType: 'OFFICE').toCreateRequest('b')['doorDeliveryCharge'], isNull);
+      expect(d.copyWith(appointmentDelivery: false).toCreateRequest('b')['appointmentDeliveryCharge'], isNull);
+      expect(d.hasExtraCharges, isTrue);
+      expect(_ready.hasExtraCharges, isFalse);
     });
 
     test('adds the E-Way Bill block once an invoice number is entered', () {
@@ -251,8 +277,8 @@ void main() {
       final container = await openBooking(tester, timeoutOnCreate: false);
       await goToReview(tester);
 
-      expect(find.text('Charges (server preview)'), findsOneWidget);
-      expect(find.text('Satara'), findsOneWidget);
+      expect(find.text('Server price'), findsOneWidget);
+      expect(find.textContaining('Satara · Chargeable'), findsOneWidget);
       expect(find.text('Net amount'), findsOneWidget);
       expect(find.text('₹500.00'), findsOneWidget);
       expect(previews, isNotEmpty);
@@ -281,7 +307,7 @@ void main() {
       await openBooking(tester, timeoutOnCreate: false, oldServer: true);
       await goToReview(tester);
 
-      expect(find.text('Charges (estimate)'), findsOneWidget);
+      expect(find.text('Estimate'), findsOneWidget);
       expect(find.text('₹420.00'), findsOneWidget, reason: 'freight from District Level Freight');
       expect(find.text('Net amount'), findsNothing, reason: 'no client-side total');
       await tester.ensureVisible(find.text('Confirm booking'));
@@ -315,7 +341,7 @@ void main() {
       final container = await openBooking(tester, timeoutOnCreate: false);
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
-      expect(find.text('Charges (server preview)'), findsOneWidget);
+      expect(find.text('Server price'), findsOneWidget);
       expect(find.text('₹500.00'), findsOneWidget);
       final before = previews.length;
 

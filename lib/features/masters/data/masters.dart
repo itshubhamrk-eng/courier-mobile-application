@@ -82,14 +82,18 @@ class PincodeArea {
 
 /// The company settings the booking screen needs.
 class BookingSettings {
-  const BookingSettings({this.minimumChargeableKg, this.ewayBillThreshold});
+  const BookingSettings({this.minimumChargeableKg, this.ewayBillThreshold, this.defaultAppointmentCharge});
 
   final num? minimumChargeableKg;
   final num? ewayBillThreshold;
 
+  /// Prefilled when appointment delivery is turned on, as on the web form.
+  final num? defaultAppointmentCharge;
+
   factory BookingSettings.fromJson(Map<String, dynamic> j) => BookingSettings(
     minimumChargeableKg: jNum(jMap(j['shipment'])['defaultChargeableWeightKg']),
     ewayBillThreshold: jNum(jMap(j['ewayBill'])['ewayBillMandatoryValue']),
+    defaultAppointmentCharge: jNum(jMap(j['shipment'])['defaultAppointmentDeliveryCharge']),
   );
 }
 

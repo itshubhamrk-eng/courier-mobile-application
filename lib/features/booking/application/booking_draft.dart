@@ -66,6 +66,14 @@ class BookingDraft {
     this.serviceTypeId,
     this.paymentModeId,
     this.remarks = '',
+    this.otherCharges,
+    this.doorDeliveryCharge,
+    this.odaChargeOverride,
+    this.appointmentDelivery = false,
+    this.appointmentDate,
+    this.appointmentTimeSlot = '',
+    this.appointmentDeliveryCharge,
+    this.insuranceApplicable = false,
   });
 
   final String? businessCustomerId;
@@ -93,6 +101,31 @@ class BookingDraft {
   final String? serviceTypeId;
   final String? paymentModeId;
   final String remarks;
+
+  // Extra charges typed on the Charges step, as on the web booking form. The
+  // server validates and prices them (e.g. other charges below a business
+  // customer's zone charges are refused).
+  final num? otherCharges;
+
+  /// Door delivery only.
+  final num? doorDeliveryCharge;
+
+  /// Replaces the ODA charge District Level Freight finds; null = server's.
+  final num? odaChargeOverride;
+  final bool appointmentDelivery;
+  final DateTime? appointmentDate;
+  final String appointmentTimeSlot;
+  final num? appointmentDeliveryCharge;
+
+  /// Insurance / FOV: the server adds 2% of the invoice value.
+  final bool insuranceApplicable;
+
+  bool get hasExtraCharges =>
+      (otherCharges ?? 0) > 0 ||
+      odaChargeOverride != null ||
+      (deliveryType == 'DOOR' && (doorDeliveryCharge ?? 0) > 0) ||
+      appointmentDelivery ||
+      insuranceApplicable;
 
   int get totalQuantity => items.fold(0, (s, i) => s + i.quantity);
   int get packageCount => numberOfPackages ?? totalQuantity;
@@ -143,6 +176,14 @@ class BookingDraft {
       'items': items.map((i) => i.toJson()).toList(),
       'businessCustomerId': businessCustomerId,
       'remarks': t(remarks),
+      'otherCharges': otherCharges,
+      'odaCharge': odaChargeOverride,
+      'doorDeliveryCharge': deliveryType == 'DOOR' ? doorDeliveryCharge : null,
+      'appointmentDelivery': appointmentDelivery,
+      'appointmentDate': appointmentDelivery && appointmentDate != null ? Fmt.apiDate(appointmentDate!) : null,
+      'appointmentTimeSlot': appointmentDelivery ? t(appointmentTimeSlot) : null,
+      'appointmentDeliveryCharge': appointmentDelivery ? appointmentDeliveryCharge : null,
+      'insuranceApplicable': insuranceApplicable,
       if (t(ewayInvoiceNumber) != null)
         'ewayBill': {
           'invoiceNumber': ewayInvoiceNumber.trim(),
@@ -178,6 +219,14 @@ class BookingDraft {
     Object? serviceTypeId = _keep,
     Object? paymentModeId = _keep,
     String? remarks,
+    Object? otherCharges = _keep,
+    Object? doorDeliveryCharge = _keep,
+    Object? odaChargeOverride = _keep,
+    bool? appointmentDelivery,
+    Object? appointmentDate = _keep,
+    String? appointmentTimeSlot,
+    Object? appointmentDeliveryCharge = _keep,
+    bool? insuranceApplicable,
   }) => BookingDraft(
     businessCustomerId: businessCustomerId == _keep ? this.businessCustomerId : businessCustomerId as String?,
     businessCustomerName: businessCustomerName == _keep ? this.businessCustomerName : businessCustomerName as String?,
@@ -202,6 +251,16 @@ class BookingDraft {
     serviceTypeId: serviceTypeId == _keep ? this.serviceTypeId : serviceTypeId as String?,
     paymentModeId: paymentModeId == _keep ? this.paymentModeId : paymentModeId as String?,
     remarks: remarks ?? this.remarks,
+    otherCharges: otherCharges == _keep ? this.otherCharges : otherCharges as num?,
+    doorDeliveryCharge: doorDeliveryCharge == _keep ? this.doorDeliveryCharge : doorDeliveryCharge as num?,
+    odaChargeOverride: odaChargeOverride == _keep ? this.odaChargeOverride : odaChargeOverride as num?,
+    appointmentDelivery: appointmentDelivery ?? this.appointmentDelivery,
+    appointmentDate: appointmentDate == _keep ? this.appointmentDate : appointmentDate as DateTime?,
+    appointmentTimeSlot: appointmentTimeSlot ?? this.appointmentTimeSlot,
+    appointmentDeliveryCharge: appointmentDeliveryCharge == _keep
+        ? this.appointmentDeliveryCharge
+        : appointmentDeliveryCharge as num?,
+    insuranceApplicable: insuranceApplicable ?? this.insuranceApplicable,
   );
 
   static const _keep = Object();

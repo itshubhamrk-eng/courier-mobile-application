@@ -226,6 +226,7 @@ class BookingRepository {
           if (extra != null && extra > 0) ChargeLine('Customer charges', extra),
           for (final l in engine.lines.where((l) => l.label != 'Freight' && l.label != 'ODA')) l,
         ],
+        adjustments: engine.adjustments,
       ),
     );
   }
