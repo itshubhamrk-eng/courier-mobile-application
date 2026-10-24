@@ -461,6 +461,7 @@ class _ChargesStep extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final d = ref.watch(bookingDraftProvider);
     final args = _previewArgs(ref, d);
+    _selectDefaults(ref, d);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -495,6 +496,25 @@ class _ChargesStep extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// Same defaults as the web booking form: the first service type, and the
+/// PAID payment mode (else the first one). Only fills an empty choice.
+void _selectDefaults(WidgetRef ref, BookingDraft d) {
+  final services = ref.watch(serviceTypesProvider).value;
+  final payments = ref.watch(paymentModesProvider).value;
+  final service = d.serviceTypeId == null ? services?.firstOrNull?.id : null;
+  final payment = d.paymentModeId == null
+      ? (payments?.where((m) => m.code.toUpperCase() == 'PAID').firstOrNull ?? payments?.firstOrNull)?.id
+      : null;
+  if (service == null && payment == null) return;
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    ref
+        .read(bookingDraftProvider.notifier)
+        .update(
+          (x) => x.copyWith(serviceTypeId: x.serviceTypeId ?? service, paymentModeId: x.paymentModeId ?? payment),
+        );
+  });
 }
 
 /// Charges from the server for [args] as a bill, with wallet / E-Way Bill warnings.
@@ -1419,6 +1439,9 @@ class _OptionDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) => switch (options) {
     AsyncData(value: final list) => DropdownButtonFormField<String>(
+      // Keyed on the value: a form field reads initialValue once, so a value set
+      // from outside (default selection, business customer) needs a rebuild.
+      key: ValueKey('$label-$value'),
       initialValue: list.any((o) => o.id == value) ? value : null,
       isExpanded: true,
       decoration: InputDecoration(labelText: label),

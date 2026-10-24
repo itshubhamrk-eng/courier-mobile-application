@@ -361,6 +361,21 @@ void main() {
       expect(previews.length, before, reason: 'summary reuses the charges step price check');
     });
 
+    testWidgets('service type and payment mode are selected by default', (tester) async {
+      final container = await openBooking(tester, timeoutOnCreate: false);
+      container.read(bookingDraftProvider.notifier).update((d) => d.copyWith(serviceTypeId: null, paymentModeId: null));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      final d = container.read(bookingDraftProvider);
+      expect(d.serviceTypeId, 'svc-1');
+      expect(d.paymentModeId, 'pay-1', reason: 'PAID mode preferred');
+      expect(find.text('Standard (STD)'), findsOneWidget);
+      expect(find.text('Paid (PAID)'), findsOneWidget);
+      expect(find.text('Server price'), findsOneWidget, reason: 'charges load without picking anything');
+    });
+
     testWidgets('missing fields stop the first step', (tester) async {
       final container = await openBooking(tester, timeoutOnCreate: false);
       container.read(bookingDraftProvider.notifier).reset();
