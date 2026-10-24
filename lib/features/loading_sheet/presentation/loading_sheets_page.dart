@@ -10,6 +10,7 @@ import '../../../core/widgets/status_badge.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../masters/data/masters.dart';
 import '../data/loading_sheet_repository.dart';
+import '../../shell/branch_header.dart';
 
 final loadingSheetsProvider = FutureProvider.autoDispose.family<List<LoadingSheet>, String>((ref, status) async {
   final branchId = ref.watch(sessionProvider.select((s) => s?.operatingBranchId));
@@ -30,15 +31,7 @@ class LoadingSheetsPage extends ConsumerWidget {
     return DefaultTabController(
       length: _tabs.length,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Loading Sheets'),
-          bottom: TabBar(
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            indicatorColor: Colors.white,
-            tabs: [for (final (_, label) in _tabs) Tab(text: label)],
-          ),
-        ),
+        appBar: sectionBar('Loading Sheets', bottom: sectionTabs([for (final (_, label) in _tabs) Tab(text: label)])),
         floatingActionButton: canCreate
             ? FloatingActionButton.extended(
                 onPressed: () async {

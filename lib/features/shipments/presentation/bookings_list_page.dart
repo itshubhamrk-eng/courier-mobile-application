@@ -13,6 +13,7 @@ import '../../../core/widgets/status_badge.dart';
 import '../../auth/application/auth_controller.dart';
 import '../data/shipment_models.dart';
 import '../data/shipment_repository.dart';
+import '../../shell/branch_header.dart';
 
 /// Shipments booked at the signed-in user's branch, newest first.
 class BookingsListPage extends ConsumerStatefulWidget {
@@ -102,7 +103,7 @@ class _BookingsListPageState extends ConsumerState<BookingsListPage> {
   Widget build(BuildContext context) {
     final canBook = ref.watch(sessionProvider)?.can(Permissions.shipmentCreate) ?? false;
     return Scaffold(
-      appBar: AppBar(title: const Text('Bookings')),
+      appBar: sectionBar('Shipment Search'),
       floatingActionButton: canBook
           ? FloatingActionButton.extended(
               onPressed: () async {

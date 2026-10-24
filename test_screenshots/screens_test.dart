@@ -146,6 +146,8 @@ class _Server {
             'companyName': 'Amazing Logistics',
           }),
         );
+      case '/api/v1/branch-wallet':
+        return (status: 200, body: ok({'availableBalance': 48250.75, 'holdBalance': 0}));
       case '/api/v1/branches/directory':
         return (status: 200, body: ok({'content': _branches}));
       case '/api/v1/dashboard/summary':
@@ -735,10 +737,10 @@ void main() {
     await shot(t, '22_pod_complete_delivery');
   });
 
-  testWidgets('23 more', (t) async {
-    final c = await boot(t, _Server());
-    c.read(routerProvider).go('/more');
+  testWidgets('23 side menu', (t) async {
+    await boot(t, _Server());
+    await t.tap(find.byTooltip('Menu'));
     await t.pumpAndSettle();
-    await shot(t, '23_more');
+    await shot(t, '23_side_menu');
   });
 }

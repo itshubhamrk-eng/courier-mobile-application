@@ -15,6 +15,7 @@ import '../../auth/application/auth_controller.dart';
 import '../../masters/data/masters.dart';
 import '../application/booking_draft.dart';
 import '../data/booking_repository.dart';
+import '../../shell/branch_header.dart';
 
 const _steps = ['Parties', 'Destination', 'Packages', 'Review'];
 
@@ -113,6 +114,7 @@ class _BookingPageState extends ConsumerState<BookingPage> {
                 );
                 if (!ok || !mounted) return;
                 ref.read(bookingDraftProvider.notifier).reset();
+                ref.invalidate(branchWalletProvider);
                 for (final c in _controllers.values) {
                   c.dispose();
                 }
