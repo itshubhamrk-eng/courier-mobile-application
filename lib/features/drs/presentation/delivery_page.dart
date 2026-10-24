@@ -10,6 +10,7 @@ import '../../auth/application/auth_controller.dart';
 import '../../masters/data/masters.dart';
 import '../../thc/data/thc_repository.dart';
 import '../data/drs_repository.dart';
+import '../../shell/branch_header.dart';
 
 final incomingSheetsProvider = FutureProvider.autoDispose<List<IncomingSheet>>((ref) {
   final branchId = ref.watch(sessionProvider.select((s) => s?.operatingBranchId));
@@ -43,26 +44,23 @@ final drsRunsProvider = FutureProvider.autoDispose<List<DrsRun>>((ref) {
 
 /// Delivery tab: receive incoming THCs, make DRS, follow delivery runs.
 class DeliveryPage extends ConsumerWidget {
-  const DeliveryPage({super.key});
+  const DeliveryPage({super.key, this.initialTab = 0});
+
+  /// 0 = In Scan (receive), 1 = Delivery runs.
+  final int initialTab;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionProvider);
     final canAssign = session?.can(Permissions.deliveryAssign) ?? false;
     return DefaultTabController(
+      key: ValueKey(initialTab),
+      initialIndex: initialTab,
       length: 2,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Delivery'),
-          bottom: const TabBar(
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            indicatorColor: Colors.white,
-            tabs: [
-              Tab(text: 'Receive'),
-              Tab(text: 'Delivery runs'),
-            ],
-          ),
+        appBar: sectionBar(
+          'Delivery',
+          bottom: sectionTabs(const [Tab(text: 'In Scan'), Tab(text: 'Delivery runs')]),
         ),
         floatingActionButton: canAssign
             ? FloatingActionButton.extended(

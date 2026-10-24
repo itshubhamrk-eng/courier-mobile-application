@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// Bottom navigation: Home, Bookings, Loading Sheets, Delivery, More.
+import 'app_drawer.dart';
+import 'branch_header.dart';
+
+/// Main screens: branch header on top, side menu on the left (like the web app),
+/// bottom bar for the four most used areas.
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.shell});
 
@@ -9,6 +13,8 @@ class AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
+    appBar: const BranchHeader(),
+    drawer: const AppDrawer(),
     body: shell,
     bottomNavigationBar: NavigationBar(
       selectedIndex: shell.currentIndex,
@@ -30,7 +36,6 @@ class AppShell extends StatelessWidget {
           selectedIcon: Icon(Icons.delivery_dining),
           label: 'Delivery',
         ),
-        NavigationDestination(icon: Icon(Icons.menu), label: 'More'),
       ],
     ),
   );

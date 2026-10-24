@@ -17,7 +17,6 @@ import 'features/drs/presentation/receive_page.dart';
 import 'features/loading_sheet/presentation/loading_sheet_detail_page.dart';
 import 'features/loading_sheet/presentation/loading_sheets_page.dart';
 import 'features/loading_sheet/presentation/new_loading_sheet_page.dart';
-import 'features/more/more_page.dart';
 import 'features/pod/presentation/pod_page.dart';
 import 'features/shell/app_shell.dart';
 import 'features/shipments/presentation/bookings_list_page.dart';
@@ -85,10 +84,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [GoRoute(path: '/loading-sheets', builder: (_, _) => const LoadingSheetsPage())],
           ),
           StatefulShellBranch(
-            routes: [GoRoute(path: '/delivery', builder: (_, _) => const DeliveryPage())],
-          ),
-          StatefulShellBranch(
-            routes: [GoRoute(path: '/more', builder: (_, _) => const MorePage())],
+            routes: [
+              GoRoute(
+                path: '/delivery',
+                builder: (_, state) => DeliveryPage(initialTab: state.uri.queryParameters['tab'] == 'runs' ? 1 : 0),
+              ),
+            ],
           ),
         ],
       ),

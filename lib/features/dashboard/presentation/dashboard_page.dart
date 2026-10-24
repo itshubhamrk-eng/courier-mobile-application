@@ -10,31 +10,21 @@ import '../../../core/widgets/state_views.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../masters/data/masters.dart';
 import '../data/dashboard_repository.dart';
+import '../../shell/branch_header.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final session = ref.watch(sessionProvider);
     final counts = ref.watch(dashboardCountsProvider);
 
-    Future<void> refresh() => ref.refresh(dashboardCountsProvider.future);
+    Future<void> refresh() {
+      ref.invalidate(branchWalletProvider);
+      return ref.refresh(dashboardCountsProvider.future);
+    }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(session?.companyName ?? 'Branch Operations', style: const TextStyle(fontSize: 18)),
-            Text(
-              'Hi, ${session?.displayName ?? ''}',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w400, color: Colors.white70),
-            ),
-          ],
-        ),
-        actions: [IconButton(tooltip: 'Refresh', icon: const Icon(Icons.refresh), onPressed: refresh)],
-      ),
       body: RefreshIndicator(
         onRefresh: refresh,
         child: switch (counts) {
