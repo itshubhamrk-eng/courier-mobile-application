@@ -628,6 +628,20 @@ void main() {
     });
   }
 
+  testWidgets('05b booking two packages', (t) async {
+    final c = await boot(t, _Server(), height: 2300);
+    c.read(bookingDraftProvider.notifier).update(
+      (_) => draft.copyWith(
+        items: [
+          draft.items.first,
+          const ItemDraft(name: 'Syrup boxes', quantity: 3, weight: 9, declaredValue: 4200),
+        ],
+      ),
+    );
+    await go(t, c, '/bookings/new');
+    await shot(t, '05b_booking_two_packages');
+  });
+
   testWidgets('09 booked', (t) async {
     final c = await boot(t, _Server());
     await go(t, c, '/bookings/done/new1');

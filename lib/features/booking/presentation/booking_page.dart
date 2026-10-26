@@ -149,6 +149,7 @@ class _BookingPageState extends ConsumerState<BookingPage> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        _businessCustomerPicker(),
                         const _Section('Destination'),
                         _destinationStep(),
                         const _Section('Packages'),
@@ -156,7 +157,7 @@ class _BookingPageState extends ConsumerState<BookingPage> {
                       ],
                     ),
                   ),
-                  _ChargesStep(businessCustomer: _businessCustomerPicker()),
+                  const _ChargesStep(),
                   _scroll(_partiesStep()),
                   _SummaryStep(onEdit: (s) => setState(() => _step = s)),
                 ],
@@ -197,7 +198,7 @@ class _BookingPageState extends ConsumerState<BookingPage> {
 
   // ---------------------------------------------------------------- step 1
 
-  /// On the charges step: a business customer changes the rates (customer zone
+  /// First on the shipment step, optional: a business customer changes the rates (customer zone
   /// pricing) and the default payment mode, and prefills the sender.
   Widget _businessCustomerPicker() => _BusinessCustomerPicker(
     selectedName: _draft.businessCustomerName,
@@ -349,22 +350,36 @@ class _BookingPageState extends ConsumerState<BookingPage> {
           OutlinedButton.icon(
             onPressed: () => _update((x) => x.copyWith(items: [...x.items, const ItemDraft()])),
             icon: const Icon(Icons.add),
-            label: const Text('Add another item'),
+            label: const Text('Add another package'),
           ),
           const SizedBox(height: 16),
-          _NumberField(
-            label: 'Number of packages (boxes)',
-            initial: d.numberOfPackages,
-            hint: '${d.totalQuantity}',
-            integer: true,
-            onChanged: (v) => _update((x) => x.copyWith(numberOfPackages: v?.toInt())),
-          ),
-          const SizedBox(height: 14),
-          _NumberField(
-            label: 'Invoice value (₹)',
-            initial: d.invoiceValue,
-            onChanged: (v) => _update((x) => x.copyWith(invoiceValue: v)),
-          ),
+          if (d.multiPackage) ...[
+            _ComputedField(
+              label: 'Number of packages (boxes)',
+              value: '${d.packageCount}',
+              note: 'Total quantity of all packages',
+            ),
+            const SizedBox(height: 14),
+            _ComputedField(
+              label: 'Invoice value (₹)',
+              value: d.invoiceAmount == null ? '' : Fmt.money(d.invoiceAmount),
+              note: 'Sum of the declared values',
+            ),
+          ] else ...[
+            _NumberField(
+              label: 'Number of packages (boxes)',
+              initial: d.numberOfPackages,
+              hint: '${d.totalQuantity}',
+              integer: true,
+              onChanged: (v) => _update((x) => x.copyWith(numberOfPackages: v?.toInt())),
+            ),
+            const SizedBox(height: 14),
+            _NumberField(
+              label: 'Invoice value (₹)',
+              initial: d.invoiceValue,
+              onChanged: (v) => _update((x) => x.copyWith(invoiceValue: v)),
+            ),
+          ],
           if (needsEway) ...[
             const _Section('E-Way Bill'),
             Text(
@@ -453,9 +468,7 @@ _PreviewArgs? _previewArgs(WidgetRef ref, BookingDraft d) {
 
 /// Step 3: service, payment mode, optional business customer, and the server's charges.
 class _ChargesStep extends ConsumerWidget {
-  const _ChargesStep({required this.businessCustomer});
-
-  final Widget businessCustomer;
+  const _ChargesStep();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -465,8 +478,6 @@ class _ChargesStep extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        businessCustomer,
-        const SizedBox(height: 12),
         _OptionDropdown(
           label: 'Service type',
           options: ref.watch(serviceTypesProvider),
@@ -943,7 +954,7 @@ class _SummaryStepState extends ConsumerState<_SummaryStep> {
             ('Packages', '${d.packageCount} (${d.totalQuantity} pcs)'),
             ('Actual weight', Fmt.kg(d.totalActualWeight)),
             ('Declared value', Fmt.money(d.declaredValue)),
-            if (d.invoiceValue != null) ('Invoice value', Fmt.money(d.invoiceValue)),
+            if (d.invoiceAmount != null) ('Invoice value', Fmt.money(d.invoiceAmount)),
             if (d.ewayInvoiceNumber.trim().isNotEmpty) ('E-Way Bill invoice', d.ewayInvoiceNumber.trim()),
           ],
         ),
@@ -1349,10 +1360,10 @@ class _ItemCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text('Item ${index + 1}', style: const TextStyle(fontWeight: FontWeight.w700)),
+              Text('Package ${index + 1}', style: const TextStyle(fontWeight: FontWeight.w700)),
               const Spacer(),
               if (canRemove)
-                IconButton(tooltip: 'Remove item', icon: const Icon(Icons.delete_outline), onPressed: onRemove),
+                IconButton(tooltip: 'Remove package', icon: const Icon(Icons.delete_outline), onPressed: onRemove),
             ],
           ),
           TextFormField(
@@ -1421,6 +1432,27 @@ class _ItemCard extends StatelessWidget {
         ],
       ),
     ),
+  );
+}
+
+/// A worked-out value shown like a field but not editable.
+class _ComputedField extends StatelessWidget {
+  const _ComputedField({required this.label, required this.value, this.note});
+
+  final String label;
+  final String value;
+  final String? note;
+
+  @override
+  Widget build(BuildContext context) => InputDecorator(
+    decoration: InputDecoration(
+      labelText: label,
+      helperText: note,
+      filled: true,
+      fillColor: AppColors.background,
+      suffixIcon: const Icon(Icons.lock_outline, size: 18),
+    ),
+    child: Text(value.isEmpty ? '–' : value, style: const TextStyle(fontWeight: FontWeight.w600)),
   );
 }
 
