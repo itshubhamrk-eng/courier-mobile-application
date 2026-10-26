@@ -112,6 +112,23 @@ void main() {
       expect(_ready.hasExtraCharges, isFalse);
     });
 
+    test('two or more packages: count is the total quantity and invoice value the sum of declared values', () {
+      final d = _ready.copyWith(
+        numberOfPackages: 9,
+        invoiceValue: 1,
+        items: [
+          const ItemDraft(quantity: 2, weight: 4, declaredValue: 1500),
+          const ItemDraft(quantity: 3, weight: 6, declaredValue: 2500),
+        ],
+      );
+      final body = d.toCreateRequest('b');
+      expect(d.multiPackage, isTrue);
+      expect(body['numberOfPackages'], 5, reason: 'typed count ignored');
+      expect(body['invoiceValue'], 4000, reason: 'typed invoice value ignored');
+      expect(d.ewayBillNeeded(4000), isTrue);
+      expect(_ready.copyWith(invoiceValue: 700).toCreateRequest('b')['invoiceValue'], 700, reason: 'one package: typed');
+    });
+
     test('adds the E-Way Bill block once an invoice number is entered', () {
       final body = _ready.copyWith(invoiceValue: 60000, ewayInvoiceNumber: 'INV-9').toCreateRequest('b');
       expect((body['ewayBill'] as Map)['invoiceNumber'], 'INV-9');

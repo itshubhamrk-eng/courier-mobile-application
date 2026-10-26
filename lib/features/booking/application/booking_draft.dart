@@ -128,14 +128,20 @@ class BookingDraft {
       insuranceApplicable;
 
   int get totalQuantity => items.fold(0, (s, i) => s + i.quantity);
-  int get packageCount => numberOfPackages ?? totalQuantity;
+
+  /// Two or more package rows: the package count and invoice value are worked out
+  /// from the rows (total quantity, sum of declared values) and not typed.
+  bool get multiPackage => items.length > 1;
+  int get packageCount => multiPackage ? totalQuantity : (numberOfPackages ?? totalQuantity);
   num get totalActualWeight => items.fold<num>(0, (s, i) => s + (i.weight ?? 0));
   num? get declaredValue {
     final values = items.map((i) => i.declaredValue).nonNulls;
     return values.isEmpty ? null : values.fold<num>(0, (s, v) => s + v);
   }
 
-  bool ewayBillNeeded(num? threshold) => threshold != null && (invoiceValue ?? 0) >= threshold;
+  num? get invoiceAmount => multiPackage ? declaredValue : invoiceValue;
+
+  bool ewayBillNeeded(num? threshold) => threshold != null && (invoiceAmount ?? 0) >= threshold;
 
   /// Chargeable weight for the fallback rate estimate on servers without
   /// `POST /shipments/preview`, using the server's own rule
@@ -172,7 +178,7 @@ class BookingDraft {
       'deliveryType': deliveryType,
       'numberOfPackages': packageCount,
       'declaredValue': declaredValue,
-      'invoiceValue': invoiceValue,
+      'invoiceValue': invoiceAmount,
       'items': items.map((i) => i.toJson()).toList(),
       'businessCustomerId': businessCustomerId,
       'remarks': t(remarks),
