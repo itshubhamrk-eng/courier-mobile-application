@@ -57,6 +57,9 @@ class ApiClient {
     parse,
   );
 
+  Future<T> patch<T>(String path, {Object? body, required T Function(Object? data) parse}) =>
+      _send(() => _dio.patch<Object?>(path, data: body), parse);
+
   Future<T> delete<T>(String path, {required T Function(Object? data) parse}) =>
       _send(() => _dio.delete<Object?>(path), parse);
 

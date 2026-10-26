@@ -10,6 +10,7 @@ import '../../core/widgets/ui.dart';
 import '../auth/application/auth_controller.dart';
 import '../masters/data/masters.dart';
 import 'branch_header.dart';
+import '../wallet/application/wallet_state.dart';
 
 class _Item {
   const _Item(this.title, this.icon, this.route, {this.permission, this.tab = false, this.color = AppColors.primary});
@@ -93,6 +94,7 @@ class AppDrawer extends ConsumerWidget {
     final wallet = ref.watch(branchWalletProvider).value;
     final location = GoRouterState.of(context).matchedLocation;
     bool can(String? p) => p == null || (session?.can(p) ?? false);
+    final walletAccess = ref.watch(walletAccessProvider);
 
     void open(_Item item) {
       Navigator.of(context).pop();
@@ -244,6 +246,38 @@ class AppDrawer extends ConsumerWidget {
                     selected: item.tab && location == item.route && item.title != 'In Scan',
                     onTap: () => open(item),
                   ),
+                if (walletAccess.view) ...[
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(20, 14, 16, 6),
+                    child: Text(
+                      'FINANCE',
+                      style: TextStyle(
+                        fontSize: 11,
+                        letterSpacing: 0.8,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  for (final (title, icon, color, route) in [
+                    ('Branch Wallet', Icons.account_balance_wallet_outlined, AppColors.green, '/wallet'),
+                    if (walletAccess.recharge) ('Recharge Wallet', Icons.add_card, AppColors.teal, '/wallet/recharge'),
+                    ('Wallet Transactions', Icons.receipt_long_outlined, AppColors.purple, '/wallet/transactions'),
+                    ('Top-up Requests', Icons.fact_check_outlined, AppColors.indigo, '/wallet/topup-requests'),
+                    if (walletAccess.rechargeReport)
+                      ('Recharge Report', Icons.assessment_outlined, AppColors.orange, '/wallet/recharge-report'),
+                  ])
+                    _tile(
+                      context,
+                      title,
+                      icon,
+                      badge: color,
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        context.push(route);
+                      },
+                    ),
+                ],
               ],
             ),
           ),

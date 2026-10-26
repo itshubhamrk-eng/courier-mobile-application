@@ -23,6 +23,11 @@ import 'features/shipments/presentation/bookings_list_page.dart';
 import 'features/shipments/presentation/shipment_detail_page.dart';
 import 'features/thc/presentation/thc_page.dart';
 import 'features/tracking/presentation/track_page.dart';
+import 'features/wallet/presentation/recharge_report_page.dart';
+import 'features/wallet/presentation/topup_pages.dart';
+import 'features/wallet/presentation/wallet_page.dart';
+import 'features/wallet/presentation/wallet_recharge_page.dart';
+import 'features/wallet/presentation/wallet_transactions_page.dart';
 
 /// Screens that need a permission. The server checks every call anyway; this
 /// keeps users from landing on a screen whose actions would all be refused.
@@ -132,6 +137,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/pod',
         builder: (_, state) => PodPage(shipmentId: state.uri.queryParameters['shipmentId']),
       ),
+      GoRoute(path: '/wallet', builder: (_, _) => const WalletPage()),
+      GoRoute(path: '/wallet/recharge', builder: (_, _) => const WalletRechargePage()),
+      GoRoute(path: '/wallet/transactions', builder: (_, _) => const WalletTransactionsPage()),
+      GoRoute(path: '/wallet/topup/new', builder: (_, _) => const TopupRequestPage()),
+      GoRoute(path: '/wallet/topup-requests', builder: (_, _) => const TopupRequestsPage()),
+      GoRoute(path: '/wallet/recharge-report', builder: (_, _) => const RechargeReportPage()),
     ],
   );
   ref.onDispose(router.dispose);

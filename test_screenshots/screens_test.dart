@@ -15,6 +15,7 @@ import 'package:branch_ops/features/auth/application/auth_controller.dart';
 import 'package:branch_ops/features/booking/application/booking_draft.dart';
 import 'package:branch_ops/router.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart' show EditableText;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -113,10 +114,13 @@ Map<String, dynamic> _detail(String status) => {
 };
 
 class _Server {
-  _Server({this.signedIn = true, this.expired = false});
+  _Server({this.signedIn = true, this.expired = false, this.walletManager = false});
 
   final bool signedIn;
   final bool expired;
+
+  /// Signs in as a branch manager with wallet rights (wallet screens).
+  final bool walletManager;
   Map<String, dynamic>? pod;
 
   Future<FakeResponse> handle(RequestOptions r) async {
@@ -129,7 +133,7 @@ class _Server {
           body: ok({
             ...loginJson(
               branchId: 'b-pune',
-              permissions: const [
+              permissions: [
                 'DASHBOARD_READ',
                 'SHIPMENT_CREATE',
                 'SHIPMENT_READ',
@@ -139,7 +143,9 @@ class _Server {
                 'DELIVERY_ASSIGN',
                 'DELIVERY_UPLOAD',
                 'DELIVERY_READ',
+                if (walletManager) ...['WALLET_READ', 'WALLET_RECHARGE'],
               ],
+              roles: walletManager ? const ['BRANCH_MANAGER'] : const ['BOOKING_OPERATOR'],
             ),
             'displayName': 'Priya Deshmukh',
             'email': 'priya.d@amazinglogistics.example',
@@ -147,7 +153,71 @@ class _Server {
           }),
         );
       case '/api/v1/branch-wallet':
-        return (status: 200, body: ok({'availableBalance': 48250.75, 'holdBalance': 0}));
+        return (
+          status: 200,
+          body: ok({
+            'id': 'w-1',
+            'walletNumber': 'WAL-PUN-0007',
+            'branchId': 'b-pune',
+            'branchCode': 'PUN',
+            'branchName': 'Pune Shivajinagar',
+            'status': 'ACTIVE',
+            'availableBalance': 48250.75,
+            'holdBalance': 1500,
+            'totalBalance': 49750.75,
+            'currency': 'INR',
+          }),
+        );
+      case '/api/v1/branch-wallet/summary':
+        return (
+          status: 200,
+          body: ok({
+            'walletNumber': 'WAL-PUN-0007',
+            'branchId': 'b-pune',
+            'branchCode': 'PUN',
+            'branchName': 'Pune Shivajinagar',
+            'status': 'ACTIVE',
+            'availableBalance': 48250.75,
+            'holdBalance': 1500,
+            'totalBalance': 49750.75,
+            'todayCredit': 10000,
+            'todayDebit': 3420,
+            'monthCredit': 85000,
+            'monthDebit': 41210.5,
+            'todayCreditCommission': 640,
+            'bookingPendingCommission': 1180,
+            'deliveryPendingCommission': 920,
+            'lastRechargeAmount': 10000,
+            'lastRechargeAt': '2026-10-26T04:30:00Z',
+          }),
+        );
+      case '/api/v1/branch-wallet/transactions':
+        return (
+          status: 200,
+          body: ok({
+            'content': [
+              for (final (no, type, sub, label, amt, bal, time) in [
+                ('WTX-26-0412', 'CR', 'WRC', 'Wallet Recharge', 10000, 48250.75, '2026-10-26T04:30:00Z'),
+                ('WTX-26-0411', 'DR', 'SBK', 'Shipment Booking', 435, 38250.75, '2026-10-25T11:02:00Z'),
+                ('WTX-26-0410', 'CR', 'COM', 'Commission', 64, 38685.75, '2026-10-25T09:40:00Z'),
+              ])
+                {
+                  'id': no,
+                  'transactionNo': no,
+                  'transactionType': type,
+                  'subTransactionType': sub,
+                  'subTransactionTypeLabel': label,
+                  'amount': amt,
+                  'balanceBefore': type == 'CR' ? bal - amt : bal + amt,
+                  'balanceAfter': bal,
+                  'createdAt': time,
+                },
+            ],
+            'page': 0,
+            'size': 20,
+            'totalElements': 3,
+          }),
+        );
       case '/api/v1/branches/directory':
         return (status: 200, body: ok({'content': _branches}));
       case '/api/v1/dashboard/summary':
@@ -640,6 +710,20 @@ void main() {
     );
     await go(t, c, '/bookings/new');
     await shot(t, '05b_booking_two_packages');
+  });
+
+  testWidgets('24 wallet', (t) async {
+    final c = await boot(t, _Server(walletManager: true), height: 1750);
+    await go(t, c, '/wallet');
+    await shot(t, '24_wallet');
+  });
+
+  testWidgets('25 wallet recharge', (t) async {
+    final c = await boot(t, _Server(walletManager: true), height: 1000);
+    await go(t, c, '/wallet/recharge');
+    await t.enterText(find.byType(EditableText).first, '5000');
+    await t.pump();
+    await shot(t, '25_wallet_recharge');
   });
 
   testWidgets('09 booked', (t) async {

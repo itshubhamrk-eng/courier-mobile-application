@@ -566,3 +566,107 @@ Future<Uint8List> buildPod({
   );
   return doc.save();
 }
+
+/// Wallet transaction receipt: same fields as the web app's receipt, plus a QR of the
+/// transaction number so a scan finds it.
+Future<Uint8List> buildWalletReceipt({
+  required pw.ThemeData theme,
+  required Letterhead letterhead,
+  required String transactionNo,
+  required bool credit,
+  required num amount,
+  required String reason,
+  required List<(String, String)> rows,
+}) {
+  final accent = credit ? PdfColor.fromInt(0xFF059669) : PdfColor.fromInt(0xFFDC2626);
+  final doc = pw.Document(theme: theme, title: 'Receipt $transactionNo');
+  doc.addPage(
+    pw.Page(
+      pageFormat: PdfPageFormat.a5.copyWith(marginLeft: 24, marginRight: 24, marginTop: 24, marginBottom: 24),
+      build: (c) => pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+        children: [
+          pw.Container(
+            padding: const pw.EdgeInsets.all(14),
+            decoration: pw.BoxDecoration(
+              gradient: pw.LinearGradient(colors: [PdfColor.fromInt(0xFF4F46E5), PdfColor.fromInt(0xFF4338CA)]),
+              borderRadius: pw.BorderRadius.circular(8),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  letterhead.name,
+                  style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+                ),
+                if (letterhead.address != null)
+                  pw.Text(letterhead.address!, style: const pw.TextStyle(fontSize: 8, color: PdfColors.white)),
+                if (letterhead.gstNumber != null || letterhead.mobile != null)
+                  pw.Text(
+                    [
+                      if (letterhead.gstNumber != null) 'GSTIN: ${letterhead.gstNumber}',
+                      if (letterhead.mobile != null) 'Ph: ${letterhead.mobile}',
+                    ].join('  |  '),
+                    style: const pw.TextStyle(fontSize: 8, color: PdfColors.white),
+                  ),
+                pw.SizedBox(height: 6),
+                pw.Text(
+                  'WALLET TRANSACTION RECEIPT',
+                  style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey300, letterSpacing: 1),
+                ),
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 14),
+          pw.Center(
+            child: pw.Text(
+              '${credit ? '+' : '-'}${_m(amount)}',
+              style: pw.TextStyle(fontSize: 26, fontWeight: pw.FontWeight.bold, color: accent),
+            ),
+          ),
+          pw.Center(
+            child: pw.Text(reason.toUpperCase(), style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+          ),
+          pw.SizedBox(height: 12),
+          for (final (k, v) in rows)
+            pw.Container(
+              padding: const pw.EdgeInsets.symmetric(vertical: 5),
+              decoration: const pw.BoxDecoration(
+                border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey200, width: 0.6)),
+              ),
+              child: pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Expanded(
+                    child: pw.Text(k, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                  ),
+                  pw.Expanded(
+                    child: pw.Text(
+                      v,
+                      textAlign: pw.TextAlign.right,
+                      style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          pw.SizedBox(height: 14),
+          pw.Center(
+            child: pw.BarcodeWidget(barcode: pw.Barcode.qrCode(), data: transactionNo, width: 80, height: 80),
+          ),
+          pw.Center(
+            child: pw.Text(transactionNo, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+          ),
+          pw.Spacer(),
+          pw.Center(
+            child: pw.Text(
+              'This is a system-generated receipt. Generated ${_dt(DateTime.now())}.',
+              style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+  return doc.save();
+}
