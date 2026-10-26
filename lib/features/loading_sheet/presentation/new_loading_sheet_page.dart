@@ -14,6 +14,7 @@ import '../../shipments/data/shipment_models.dart';
 import '../../shipments/data/shipment_repository.dart';
 import '../data/loading_sheet_repository.dart';
 import '../../../core/scan_code.dart';
+import '../../../core/widgets/ui.dart';
 
 class NewLoadingSheetPage extends ConsumerStatefulWidget {
   const NewLoadingSheetPage({super.key});
@@ -230,7 +231,7 @@ class _NewLoadingSheetPageState extends ConsumerState<NewLoadingSheetPage> {
     }..sort((a, b) => a.label.compareTo(b.label));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('New Loading Sheet')),
+      appBar: AppBar(flexibleSpace: const AppBarGradient(), title: const Text('New Loading Sheet')),
       body: Column(
         children: [
           Expanded(

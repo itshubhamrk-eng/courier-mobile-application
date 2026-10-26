@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import 'app_drawer.dart';
 import 'branch_header.dart';
+import '../../core/widgets/ui.dart';
 
 /// Main screens: branch header on top, side menu on the left (like the web app),
 /// bottom bar for the four most used areas.
@@ -51,7 +52,7 @@ class ComingSoonPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(title), automaticallyImplyLeading: showBack),
+    appBar: AppBar(flexibleSpace: const AppBarGradient(), title: Text(title), automaticallyImplyLeading: showBack),
     body: Center(
       child: Padding(
         padding: const EdgeInsets.all(24),

@@ -15,6 +15,7 @@ import '../../pod/presentation/failed_delivery.dart';
 import 'drs_widgets.dart';
 import '../../documents/document_page.dart';
 import '../../documents/document_service.dart';
+import '../../../core/widgets/ui.dart';
 
 typedef DrsRunKey = ({String user, String branch, String date});
 
@@ -57,6 +58,7 @@ class DrsRunPage extends ConsumerWidget {
       length: _filters.length,
       child: Scaffold(
         appBar: AppBar(
+          flexibleSpace: const AppBarGradient(),
           title: Text(detail.value?.drsNumber ?? 'Delivery run'),
           actions: [
             IconButton(

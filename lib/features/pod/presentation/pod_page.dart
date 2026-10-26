@@ -18,6 +18,7 @@ import '../../shipments/data/shipment_models.dart';
 import '../../shipments/data/shipment_repository.dart';
 import '../data/pod_repository.dart';
 import 'failed_delivery.dart';
+import '../../../core/widgets/ui.dart';
 
 /// Picks the camera / gallery image. Overridable in tests.
 final podImagePickerProvider = Provider<Future<Uint8List?> Function(ImageSource source)>((ref) {
@@ -228,7 +229,7 @@ class _PodPageState extends ConsumerState<PodPage> {
   Widget build(BuildContext context) {
     if (_done != null) return _DoneView(shipment: _done!);
     return Scaffold(
-      appBar: AppBar(title: const Text('Proof of Delivery')),
+      appBar: AppBar(flexibleSpace: const AppBarGradient(), title: const Text('Proof of Delivery')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -316,13 +317,19 @@ class _PodPageState extends ConsumerState<PodPage> {
           ),
         ),
       ),
-      const SizedBox(height: 12),
-      TextField(
-        controller: _receiver,
-        textCapitalization: TextCapitalization.words,
-        decoration: const InputDecoration(labelText: 'Received by', prefixIcon: Icon(Icons.person_outline)),
+      const SizedBox(height: 14),
+      SectionCard(
+        title: 'Receiver',
+        icon: Icons.person_outline,
+        color: AppColors.green,
+        children: [
+          TextField(
+            controller: _receiver,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(labelText: 'Received by', prefixIcon: Icon(Icons.person_outline)),
+          ),
+        ],
       ),
-      const SizedBox(height: 16),
       if (podReady)
         _ExistingPod(
           pod: _pod!,
@@ -340,49 +347,50 @@ class _PodPageState extends ConsumerState<PodPage> {
               style: const TextStyle(color: AppColors.danger),
             ),
           ),
-        const Text('Delivery photo', style: TextStyle(fontWeight: FontWeight.w700)),
-        const SizedBox(height: 8),
-        if (_photo != null)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.memory(
-              _photo!,
-              height: 220,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => const Text('Photo could not be shown. Retake it.'),
-            ),
-          ),
-        const SizedBox(height: 8),
-        Row(
+        SectionCard(
+          title: 'Delivery photo',
+          icon: Icons.photo_camera_outlined,
+          color: AppColors.pink,
           children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _uploading ? null : () => _pick(ImageSource.camera),
-                icon: const Icon(Icons.photo_camera_outlined),
-                label: Text(_photo == null ? 'Take photo' : 'Retake'),
+            if (_photo != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.memory(
+                  _photo!,
+                  height: 220,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => const Text('Photo could not be shown. Retake it.'),
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _uploading ? null : () => _pick(ImageSource.gallery),
-                icon: const Icon(Icons.photo_library_outlined),
-                label: const Text('Gallery'),
-              ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _uploading ? null : () => _pick(ImageSource.camera),
+                    icon: const Icon(Icons.photo_camera_outlined),
+                    label: Text(_photo == null ? 'Take photo' : 'Retake'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _uploading ? null : () => _pick(ImageSource.gallery),
+                    icon: const Icon(Icons.photo_library_outlined),
+                    label: const Text('Gallery'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            const Expanded(
-              child: Text('Signature (optional)', style: TextStyle(fontWeight: FontWeight.w700)),
-            ),
-            TextButton(onPressed: _signature.clear, child: const Text('Clear')),
-          ],
+        SectionCard(
+          title: 'Signature (optional)',
+          icon: Icons.draw_outlined,
+          color: AppColors.indigo,
+          trailing: TextButton(onPressed: _signature.clear, child: const Text('Clear')),
+          children: [SignaturePad(controller: _signature)],
         ),
-        SignaturePad(controller: _signature),
-        const SizedBox(height: 16),
         if (_progress != null) ...[
           LinearProgressIndicator(value: _progress),
           const SizedBox(height: 4),
@@ -483,7 +491,11 @@ class _DoneView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Proof of Delivery'), automaticallyImplyLeading: false),
+    appBar: AppBar(
+      flexibleSpace: const AppBarGradient(),
+      title: const Text('Proof of Delivery'),
+      automaticallyImplyLeading: false,
+    ),
     body: ListView(
       padding: const EdgeInsets.all(20),
       children: [

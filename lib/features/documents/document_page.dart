@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
 
 import '../../core/widgets/state_views.dart';
+import '../../core/widgets/ui.dart';
 
 /// Opens a generated PDF with the system print and share actions.
 Future<void> openDocument(
@@ -33,7 +34,7 @@ class _DocumentPageState extends State<DocumentPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(widget.title)),
+    appBar: AppBar(flexibleSpace: const AppBarGradient(), title: Text(widget.title)),
     body: FutureBuilder<Uint8List>(
       future: _pdf,
       builder: (context, snap) {

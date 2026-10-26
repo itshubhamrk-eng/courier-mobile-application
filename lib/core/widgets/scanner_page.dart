@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import 'ui.dart';
+
 /// Full-screen barcode / QR scanner. Pops with the first scanned value.
 ///
 /// The value is only an AWB candidate: callers look it up on the server and
@@ -40,6 +42,7 @@ class _ScannerPageState extends State<ScannerPage> {
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: Colors.black,
     appBar: AppBar(
+      flexibleSpace: const AppBarGradient(),
       title: Text(widget.title),
       actions: [IconButton(tooltip: 'Torch', icon: const Icon(Icons.flash_on), onPressed: _controller.toggleTorch)],
     ),
