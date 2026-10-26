@@ -101,31 +101,62 @@ class _ReceivePageState extends ConsumerState<ReceivePage> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  Text('From ${branches[value.sheet.bookingBranchId]?.label ?? '–'}'),
-                  const SizedBox(height: 12),
+                  HeroCard(
+                    colors: const [AppColors.teal, AppColors.cyan],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text(
+                          'INCOMING FROM',
+                          style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1),
+                        ),
+                        Text(
+                          branches[value.sheet.bookingBranchId]?.label ?? '–',
+                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Text(
+                              '${_received.length} / ${value.shipments.length}',
+                              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('received', style: TextStyle(color: Colors.white70)),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: LinearProgressIndicator(
+                            value: value.shipments.isEmpty ? 0 : _received.length / value.shipments.length,
+                            minHeight: 8,
+                            backgroundColor: Colors.white24,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   TextField(
                     controller: _scan,
                     onSubmitted: (v) => _mark(v, value),
-                    decoration: InputDecoration(
-                      hintText: 'Scan or type AWB received',
-                      prefixIcon: const Icon(Icons.qr_code_scanner),
-                      suffixIcon: IconButton(
-                        tooltip: 'Scan',
-                        icon: const Icon(Icons.camera_alt_outlined),
-                        onPressed: () async {
-                          final v = await ScannerPage.scan(context);
-                          if (v != null && mounted) _mark(v, value);
-                        },
-                      ),
+                    decoration: scanDecoration(
+                      'Scan or type AWB received',
+                      onScan: () async {
+                        final v = await ScannerPage.scan(context);
+                        if (v != null && mounted) _mark(v, value);
+                      },
                     ),
                   ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
+                        child: SectionTitle(
                           '${_received.length} of ${value.shipments.length} received',
-                          style: const TextStyle(fontWeight: FontWeight.w700),
+                          icon: Icons.move_to_inbox_outlined,
+                          color: AppColors.teal,
                         ),
                       ),
                       TextButton(
@@ -141,13 +172,18 @@ class _ReceivePageState extends ConsumerState<ReceivePage> {
                     ],
                   ),
                   for (final s in value.shipments)
-                    CheckboxListTile(
-                      value: _received.contains(s.trackingNumber),
-                      onChanged: (v) => setState(
-                        () => v == true ? _received.add(s.trackingNumber) : _received.remove(s.trackingNumber),
-                      ),
-                      title: Text(s.trackingNumber, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: Text([s.receiverName, s.toCity].nonNulls.join(' · ')),
+                    PickTile(
+                      selected: _received.contains(s.trackingNumber),
+                      onChanged: (v) =>
+                          setState(() => v ? _received.add(s.trackingNumber) : _received.remove(s.trackingNumber)),
+                      title: s.trackingNumber,
+                      color: AppColors.teal,
+                      lines: [
+                        Text(
+                          [s.receiverName, s.toCity].nonNulls.join(' · '),
+                          style: const TextStyle(color: AppColors.textSecondary),
+                        ),
+                      ],
                     ),
                   const SizedBox(height: 8),
                   TextField(

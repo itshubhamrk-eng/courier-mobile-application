@@ -97,14 +97,38 @@ class DrsRunPage extends ConsumerWidget {
             children: [
               Container(
                 width: double.infinity,
-                color: AppColors.surface,
+                margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 padding: const EdgeInsets.all(12),
-                child: Text(
-                  [
-                    partner?.name ?? 'Delivery partner',
-                    ?partner?.mobile,
-                    Fmt.date(DateTime.parse(runKey.date)),
-                  ].join(' · '),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.orange.withValues(alpha: 0.14), AppColors.amber.withValues(alpha: 0.10)],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    const IconBadge(Icons.delivery_dining_outlined, color: AppColors.orange, size: 40),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            partner?.name ?? 'Delivery partner',
+                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                          ),
+                          Text(
+                            [?partner?.mobile, Fmt.date(DateTime.parse(runKey.date))].join(' · '),
+                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      '${value.rows.where((r) => r.status == 'DELIVERED').length}/${value.rows.length}',
+                      style: const TextStyle(color: AppColors.orange, fontWeight: FontWeight.w800, fontSize: 18),
+                    ),
+                  ],
                 ),
               ),
               Expanded(

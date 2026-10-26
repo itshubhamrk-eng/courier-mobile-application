@@ -37,7 +37,8 @@ void main() {
     expect(find.text('Track Shipment'), findsOneWidget);
     expect(find.text('Shipment Booking'), findsNothing, reason: 'no SHIPMENT_CREATE');
     expect(find.text('Trip Hire Challan (THC)'), findsNothing);
-    expect(find.text('Wallet ₹12,500.50'), findsOneWidget);
+    expect(find.text('Wallet balance'), findsOneWidget);
+    expect(find.text('₹12,500.50'), findsWidgets);
 
     await tester.tap(find.text('Sign out'));
     await tester.pumpAndSettle();

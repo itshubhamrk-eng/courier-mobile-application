@@ -238,64 +238,63 @@ class _NewLoadingSheetPageState extends ConsumerState<NewLoadingSheetPage> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                SegmentedButton<LoadingMode>(
-                  segments: [
-                    const ButtonSegment(value: LoadingMode.hub, label: Text('To hub')),
-                    const ButtonSegment(value: LoadingMode.branch, label: Text('To branch')),
-                    if (atHub) const ButtonSegment(value: LoadingMode.nextStop, label: Text('Next stop')),
-                  ],
-                  selected: {_mode},
-                  onSelectionChanged: (s) => _setMode(s.first),
-                ),
-                const SizedBox(height: 14),
-                if (branches.hasError)
-                  ErrorView(error: branches.error!, onRetry: () => ref.invalidate(branchDirectoryProvider))
-                else
-                  DropdownButtonFormField<String>(
-                    key: ValueKey('dest-$_mode-${options.length}'),
-                    initialValue: options.any((o) => o.id == _destinationId) ? _destinationId : null,
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      labelText: _mode == LoadingMode.hub ? 'Hub' : 'Destination branch',
-                      prefixIcon: const Icon(Icons.local_shipping_outlined),
+                SectionCard(
+                  title: 'Destination',
+                  icon: Icons.place_outlined,
+                  color: AppColors.teal,
+                  children: [
+                    SegmentedButton<LoadingMode>(
+                      segments: [
+                        const ButtonSegment(value: LoadingMode.hub, label: Text('To hub')),
+                        const ButtonSegment(value: LoadingMode.branch, label: Text('To branch')),
+                        if (atHub) const ButtonSegment(value: LoadingMode.nextStop, label: Text('Next stop')),
+                      ],
+                      selected: {_mode},
+                      onSelectionChanged: (s) => _setMode(s.first),
                     ),
-                    items: [
-                      for (final b in options)
-                        DropdownMenuItem(
-                          value: b.id,
-                          child: Text(b.label, overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 14),
+                    if (branches.hasError)
+                      ErrorView(error: branches.error!, onRetry: () => ref.invalidate(branchDirectoryProvider))
+                    else
+                      DropdownButtonFormField<String>(
+                        key: ValueKey('dest-$_mode-${options.length}'),
+                        initialValue: options.any((o) => o.id == _destinationId) ? _destinationId : null,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          labelText: _mode == LoadingMode.hub ? 'Hub' : 'Destination branch',
+                          prefixIcon: const Icon(Icons.local_shipping_outlined),
                         ),
-                    ],
-                    onChanged: _setDestination,
-                  ),
-                if (_mode == LoadingMode.nextStop && !_loading && _routed.isEmpty && _error == null)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 8),
-                    child: Text('No shipments with a next stop are waiting here.'),
-                  ),
+                        items: [
+                          for (final b in options)
+                            DropdownMenuItem(
+                              value: b.id,
+                              child: Text(b.label, overflow: TextOverflow.ellipsis),
+                            ),
+                        ],
+                        onChanged: _setDestination,
+                      ),
+                    if (_mode == LoadingMode.nextStop && !_loading && _routed.isEmpty && _error == null)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Text('No shipments with a next stop are waiting here.'),
+                      ),
+                  ],
+                ),
                 if (_destinationId != null) ...[
-                  const SizedBox(height: 14),
                   TextField(
                     controller: _scan,
                     textInputAction: TextInputAction.done,
                     onSubmitted: _addByAwb,
-                    decoration: InputDecoration(
-                      hintText: 'Scan or type AWB to add',
-                      prefixIcon: const Icon(Icons.qr_code_scanner),
-                      suffixIcon: IconButton(
-                        tooltip: 'Scan',
-                        icon: const Icon(Icons.camera_alt_outlined),
-                        onPressed: _scanAwb,
-                      ),
-                    ),
+                    decoration: scanDecoration('Scan or type AWB to add', onScan: _scanAwb),
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
+                        child: SectionTitle(
                           'Eligible shipments (${_eligible.length})',
-                          style: const TextStyle(fontWeight: FontWeight.w700),
+                          icon: Icons.inventory_2_outlined,
+                          color: AppColors.purple,
                         ),
                       ),
                       if (_eligible.isNotEmpty)
@@ -334,27 +333,19 @@ class _NewLoadingSheetPageState extends ConsumerState<NewLoadingSheetPage> {
                   )
                 else
                   for (final s in _eligible)
-                    Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: CheckboxListTile(
-                        value: _selected.contains(s.id),
-                        onChanged: (v) => setState(() => v == true ? _selected.add(s.id) : _selected.remove(s.id)),
-                        title: Row(
-                          children: [
-                            Expanded(
-                              child: Text(s.trackingNumber, style: const TextStyle(fontWeight: FontWeight.w700)),
-                            ),
-                            StatusBadge(s.status),
-                          ],
+                    PickTile(
+                      selected: _selected.contains(s.id),
+                      onChanged: (v) => setState(() => v ? _selected.add(s.id) : _selected.remove(s.id)),
+                      title: s.trackingNumber,
+                      badge: StatusBadge(s.status),
+                      lines: [
+                        RouteStrip(from: s.fromCity ?? '–', to: s.toCity ?? '–'),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${s.packages ?? 0} pkg · ${Fmt.kg(s.chargeableWeight)}',
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                         ),
-                        subtitle: Text(
-                          [
-                            '${s.fromCity ?? '–'} → ${s.toCity ?? '–'}',
-                            '${s.packages ?? 0} pkg · ${Fmt.kg(s.chargeableWeight)}',
-                          ].join('\n'),
-                        ),
-                        isThreeLine: true,
-                      ),
+                      ],
                     ),
                 if (_destinationId != null && _eligible.isNotEmpty) ...[
                   const SizedBox(height: 8),
@@ -371,18 +362,17 @@ class _NewLoadingSheetPageState extends ConsumerState<NewLoadingSheetPage> {
             child: Container(
               decoration: const BoxDecoration(
                 color: AppColors.surface,
-                border: Border(top: BorderSide(color: AppColors.border)),
+                boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 12, offset: Offset(0, -2))],
               ),
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _Total('Shipments', '${picked.length}'),
-                      _Total('Packages', '$packages'),
-                      _Total('Weight', Fmt.kg(weight)),
+                      TotalChip(label: 'Shipments', value: '${picked.length}', color: AppColors.indigo),
+                      TotalChip(label: 'Packages', value: '$packages', color: AppColors.purple),
+                      TotalChip(label: 'Weight', value: Fmt.kg(weight), color: AppColors.teal),
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -405,19 +395,4 @@ class _NewLoadingSheetPageState extends ConsumerState<NewLoadingSheetPage> {
       ),
     );
   }
-}
-
-class _Total extends StatelessWidget {
-  const _Total(this.label, this.value);
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-      Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-    ],
-  );
 }

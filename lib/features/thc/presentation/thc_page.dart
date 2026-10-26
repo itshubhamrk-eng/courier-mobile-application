@@ -326,19 +326,13 @@ class _ThcFormState extends ConsumerState<_ThcForm> {
             TextField(
               controller: _scan,
               onSubmitted: (v) => _outScan(v, data),
-              decoration: InputDecoration(
-                hintText: 'Scan or type AWB',
-                prefixIcon: const Icon(Icons.qr_code_scanner),
-                suffixIcon: _scanning
-                    ? const Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2))
-                    : IconButton(
-                        tooltip: 'Scan',
-                        icon: const Icon(Icons.camera_alt_outlined),
-                        onPressed: () async {
-                          final v = await ScannerPage.scan(context);
-                          if (v != null && mounted) await _outScan(v, data);
-                        },
-                      ),
+              decoration: scanDecoration(
+                'Scan or type AWB',
+                busy: _scanning,
+                onScan: () async {
+                  final v = await ScannerPage.scan(context);
+                  if (v != null && mounted) await _outScan(v, data);
+                },
               ),
             ),
             const SizedBox(height: 6),

@@ -66,42 +66,61 @@ class LoadingSheetDetailPage extends ConsumerWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
             children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              value.sheet.number,
-                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              HeroCard(
+                colors: const [AppColors.purple, AppColors.indigo],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            value.sheet.number,
+                            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                          child: Text(
+                            statusStyle(value.sheet.status).label,
+                            style: TextStyle(
+                              color: statusStyle(value.sheet.status).color,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
                             ),
                           ),
-                          StatusBadge(value.sheet.status),
-                        ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    RouteStrip(
+                      from: branches[value.sheet.bookingBranchId]?.label ?? '–',
+                      to: branches[value.sheet.deliveryBranchId]?.label ?? '–',
+                      onDark: true,
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      [
+                        'Created ${Fmt.dateTime(value.sheet.createdAt)}',
+                        if (value.sheet.dispatchedAt != null) 'Dispatched ${Fmt.dateTime(value.sheet.dispatchedAt)}',
+                      ].join('\n'),
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                    if (value.sheet.remarks != null)
+                      Text(
+                        'Remarks: ${value.sheet.remarks}',
+                        style: const TextStyle(color: Colors.white70, fontSize: 12),
                       ),
-                      const SizedBox(height: 8),
-                      Text('From ${branches[value.sheet.bookingBranchId]?.label ?? '–'}'),
-                      Text('To ${branches[value.sheet.deliveryBranchId]?.label ?? '–'}'),
-                      Text('Created ${Fmt.dateTime(value.sheet.createdAt)}'),
-                      if (value.sheet.dispatchedAt != null)
-                        Text('Dispatched ${Fmt.dateTime(value.sheet.dispatchedAt)}'),
-                      if (value.sheet.remarks != null) Text('Remarks: ${value.sheet.remarks}'),
-                      const Divider(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _Stat('Shipments', '${value.sheet.shipmentCount}'),
-                          _Stat('Packages', '${value.sheet.totalPackages}'),
-                          _Stat('Weight', Fmt.kg(value.sheet.totalWeight)),
-                        ],
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
+              ),
+              Row(
+                children: [
+                  TotalChip(label: 'Shipments', value: '${value.sheet.shipmentCount}', color: AppColors.indigo),
+                  TotalChip(label: 'Packages', value: '${value.sheet.totalPackages}', color: AppColors.purple),
+                  TotalChip(label: 'Weight', value: Fmt.kg(value.sheet.totalWeight), color: AppColors.teal),
+                ],
               ),
               if (value.sheet.isOpen && (session?.can(Permissions.manifestDispatch) ?? false)) ...[
                 const SizedBox(height: 12),
@@ -112,7 +131,11 @@ class LoadingSheetDetailPage extends ConsumerWidget {
                 ),
               ],
               const SizedBox(height: 16),
-              Text('Shipments (${value.shipments.length})', style: const TextStyle(fontWeight: FontWeight.w700)),
+              SectionTitle(
+                'Shipments (${value.shipments.length})',
+                icon: Icons.inventory_2_outlined,
+                color: AppColors.purple,
+              ),
               const SizedBox(height: 8),
               for (final s in value.shipments)
                 Padding(
@@ -156,19 +179,4 @@ class LoadingSheetDetailPage extends ConsumerWidget {
     }
     ref.invalidate(loadingSheetDetailProvider(sheetId));
   }
-}
-
-class _Stat extends StatelessWidget {
-  const _Stat(this.label, this.value);
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-      Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-    ],
-  );
 }

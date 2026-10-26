@@ -30,79 +30,96 @@ class BookingDonePage extends ConsumerWidget {
       ),
       body: switch (view) {
         AsyncData(:final value) => ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           children: [
-            const Icon(Icons.check_circle, color: AppColors.success, size: 64),
-            const SizedBox(height: 12),
-            const Text(
-              'Shipment booked',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 20),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    const Text('AWB number', style: TextStyle(color: AppColors.textSecondary)),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SelectableText(
-                          value.shipment.trackingNumber,
-                          style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: 1),
+            HeroCard(
+              colors: const [AppColors.green, AppColors.teal],
+              child: Column(
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                    child: const Icon(Icons.check_rounded, color: AppColors.green, size: 44),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Shipment booked',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('AWB NUMBER', style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SelectableText(
+                        value.shipment.trackingNumber,
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1,
+                          color: Colors.white,
                         ),
-                        IconButton(
-                          tooltip: 'Copy AWB',
-                          icon: const Icon(Icons.copy),
-                          onPressed: () async {
-                            await Clipboard.setData(ClipboardData(text: value.shipment.trackingNumber));
-                            if (context.mounted) showSuccess(context, 'AWB copied');
-                          },
-                        ),
-                      ],
-                    ),
-                    Text('Shipment ${value.shipment.shipmentNumber}'),
-                    if (value.charges?.netAmount != null) ...[
-                      const Divider(height: 28),
-                      const Text('Net amount', style: TextStyle(color: AppColors.textSecondary)),
-                      Text(
-                        Fmt.money(value.charges!.netAmount),
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+                      ),
+                      IconButton(
+                        tooltip: 'Copy AWB',
+                        icon: const Icon(Icons.copy, color: Colors.white),
+                        onPressed: () async {
+                          await Clipboard.setData(ClipboardData(text: value.shipment.trackingNumber));
+                          if (context.mounted) showSuccess(context, 'AWB copied');
+                        },
                       ),
                     ],
+                  ),
+                  Text('Shipment ${value.shipment.shipmentNumber}', style: const TextStyle(color: Colors.white70)),
+                  if (value.charges?.netAmount != null) ...[
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
+                      child: Text(
+                        'Net amount  ${Fmt.money(value.charges!.netAmount)}',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.green),
+                      ),
+                    ),
                   ],
-                ),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: () => context.pushReplacement('/shipments/$shipmentId'),
-              icon: const Icon(Icons.receipt_long_outlined),
-              label: const Text('View shipment'),
-            ),
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-              onPressed: () => context.pushReplacement('/bookings/new'),
-              icon: const Icon(Icons.add),
-              label: const Text('Book another'),
-            ),
-            const SizedBox(height: 10),
-            TextButton(onPressed: () => context.go('/home'), child: const Text('Done')),
             const SizedBox(height: 4),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-              onPressed: () => openDocument(
-                context,
-                title: 'Labels ${value.shipment.trackingNumber}',
-                fileName: 'label-${value.shipment.trackingNumber}.pdf',
-                build: () => ref.read(documentServiceProvider).label(shipmentId),
-              ),
-              icon: const Icon(Icons.print_outlined),
-              label: const Text('Print labels'),
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.6,
+              children: [
+                _Action(
+                  'View shipment',
+                  Icons.receipt_long_outlined,
+                  AppColors.indigo,
+                  () => context.pushReplacement('/shipments/$shipmentId'),
+                ),
+                _Action(
+                  'Print labels',
+                  Icons.print_outlined,
+                  AppColors.purple,
+                  () => openDocument(
+                    context,
+                    title: 'Labels ${value.shipment.trackingNumber}',
+                    fileName: 'label-${value.shipment.trackingNumber}.pdf',
+                    build: () => ref.read(documentServiceProvider).label(shipmentId),
+                  ),
+                ),
+                _Action(
+                  'Book another',
+                  Icons.add_box_outlined,
+                  AppColors.teal,
+                  () => context.pushReplacement('/bookings/new'),
+                ),
+                _Action('Done', Icons.home_outlined, AppColors.orange, () => context.go('/home')),
+              ],
             ),
           ],
         ),
@@ -121,4 +138,39 @@ class BookingDonePage extends ConsumerWidget {
       },
     );
   }
+}
+
+class _Action extends StatelessWidget {
+  const _Action(this.label, this.icon, this.color, this.onTap);
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: color.withValues(alpha: 0.1),
+    borderRadius: BorderRadius.circular(16),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(14)),
+            child: Icon(icon, color: Colors.white),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: TextStyle(fontWeight: FontWeight.w700, color: color),
+          ),
+        ],
+      ),
+    ),
+  );
 }

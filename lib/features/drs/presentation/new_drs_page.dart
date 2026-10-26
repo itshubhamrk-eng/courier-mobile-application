@@ -213,102 +213,109 @@ class _NewDrsPageState extends ConsumerState<NewDrsPage> {
                   ),
                   const SizedBox(height: 12),
                 ],
-                Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.delivery_dining_outlined, color: AppColors.primary),
-                    title: Text(_partner?.name ?? 'Pick delivery partner'),
-                    subtitle: _partner?.mobile == null ? null : Text(_partner!.mobile!),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: _pickPartner,
-                  ),
-                ),
-                if (_partner != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: _otpVerified
-                        ? const Row(
-                            children: [
-                              Icon(Icons.verified, color: AppColors.success),
-                              SizedBox(width: 8),
-                              Text('Partner verified by OTP'),
-                            ],
-                          )
-                        : Row(
-                            children: [
-                              Expanded(
-                                child: _otpMasked == null
-                                    ? const Text(
-                                        'Partner OTP (optional)',
-                                        style: TextStyle(color: AppColors.textSecondary),
-                                      )
-                                    : TextField(
-                                        controller: _otp,
-                                        keyboardType: TextInputType.number,
-                                        inputFormatters: [
-                                          FilteringTextInputFormatter.digitsOnly,
-                                          LengthLimitingTextInputFormatter(4),
-                                        ],
-                                        decoration: InputDecoration(
-                                          labelText: 'OTP sent to $_otpMasked',
-                                          isDense: true,
-                                        ),
-                                      ),
-                              ),
-                              TextButton(
-                                onPressed: _otpBusy ? null : _sendOtp,
-                                child: Text(_otpMasked == null ? 'Send OTP' : 'Resend'),
-                              ),
-                              if (_otpMasked != null)
-                                FilledButton(onPressed: _otpBusy ? null : _verifyOtp, child: const Text('Verify')),
-                            ],
-                          ),
-                  ),
-                const SizedBox(height: 10),
-                DropdownButtonFormField<String>(
-                  initialValue: _vehicleId,
-                  isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Vehicle (optional)'),
-                  items: [
-                    const DropdownMenuItem<String>(child: Text('None')),
-                    for (final v in vehicles) DropdownMenuItem(value: v.id, child: Text(v.label)),
-                  ],
-                  onChanged: (v) => setState(() => _vehicleId = v),
-                ),
-                const SizedBox(height: 10),
-                Row(
+                SectionCard(
+                  title: 'Delivery partner',
+                  icon: Icons.person_pin_circle_outlined,
+                  color: AppColors.orange,
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _fuel,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(labelText: 'Fuel (₹, optional)'),
+                    Material(
+                      color: AppColors.field,
+                      borderRadius: BorderRadius.circular(12),
+                      clipBehavior: Clip.antiAlias,
+                      child: ListTile(
+                        leading: const IconBadge(Icons.delivery_dining_outlined, color: AppColors.orange),
+                        title: Text(_partner?.name ?? 'Pick delivery partner'),
+                        subtitle: _partner?.mobile == null ? null : Text(_partner!.mobile!),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: _pickPartner,
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: TextField(
-                        controller: _charge,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(labelText: 'Delivery charge (₹, optional)'),
+                    if (_partner != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: _otpVerified
+                            ? const Row(
+                                children: [
+                                  Icon(Icons.verified, color: AppColors.success),
+                                  SizedBox(width: 8),
+                                  Text('Partner verified by OTP'),
+                                ],
+                              )
+                            : Row(
+                                children: [
+                                  Expanded(
+                                    child: _otpMasked == null
+                                        ? const Text(
+                                            'Partner OTP (optional)',
+                                            style: TextStyle(color: AppColors.textSecondary),
+                                          )
+                                        : TextField(
+                                            controller: _otp,
+                                            keyboardType: TextInputType.number,
+                                            inputFormatters: [
+                                              FilteringTextInputFormatter.digitsOnly,
+                                              LengthLimitingTextInputFormatter(4),
+                                            ],
+                                            decoration: InputDecoration(
+                                              labelText: 'OTP sent to $_otpMasked',
+                                              isDense: true,
+                                            ),
+                                          ),
+                                  ),
+                                  TextButton(
+                                    onPressed: _otpBusy ? null : _sendOtp,
+                                    child: Text(_otpMasked == null ? 'Send OTP' : 'Resend'),
+                                  ),
+                                  if (_otpMasked != null)
+                                    FilledButton(onPressed: _otpBusy ? null : _verifyOtp, child: const Text('Verify')),
+                                ],
+                              ),
                       ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      initialValue: _vehicleId,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Vehicle (optional)',
+                        prefixIcon: Icon(Icons.local_shipping_outlined),
+                      ),
+                      items: [
+                        const DropdownMenuItem<String>(child: Text('None')),
+                        for (final v in vehicles) DropdownMenuItem(value: v.id, child: Text(v.label)),
+                      ],
+                      onChanged: (v) => setState(() => _vehicleId = v),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _fuel,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(labelText: 'Fuel (₹, optional)'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextField(
+                            controller: _charge,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(labelText: 'Delivery charge (₹, optional)'),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
                 TextField(
                   controller: _scan,
                   onSubmitted: _addByAwb,
-                  decoration: InputDecoration(
-                    hintText: 'Scan or type AWB to add',
-                    prefixIcon: const Icon(Icons.qr_code_scanner),
-                    suffixIcon: IconButton(
-                      tooltip: 'Scan',
-                      icon: const Icon(Icons.camera_alt_outlined),
-                      onPressed: () async {
-                        final v = await ScannerPage.scan(context);
-                        if (v != null && mounted) _addByAwb(v);
-                      },
-                    ),
+                  decoration: scanDecoration(
+                    'Scan or type AWB to add',
+                    onScan: () async {
+                      final v = await ScannerPage.scan(context);
+                      if (v != null && mounted) _addByAwb(v);
+                    },
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -335,9 +342,10 @@ class _NewDrsPageState extends ConsumerState<NewDrsPage> {
                         Row(
                           children: [
                             Expanded(
-                              child: Text(
+                              child: SectionTitle(
                                 'Waiting for delivery (${list.length})',
-                                style: const TextStyle(fontWeight: FontWeight.w700),
+                                icon: Icons.inventory_2_outlined,
+                                color: AppColors.purple,
                               ),
                             ),
                             TextButton(
@@ -353,20 +361,29 @@ class _NewDrsPageState extends ConsumerState<NewDrsPage> {
                           ],
                         ),
                         for (final s in list)
-                          Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: CheckboxListTile(
-                              value: _selected.contains(s.id),
-                              onChanged: (v) =>
-                                  setState(() => v == true ? _selected.add(s.id) : _selected.remove(s.id)),
-                              title: Text(s.trackingNumber, style: const TextStyle(fontWeight: FontWeight.w700)),
-                              subtitle: Text(
-                                [
-                                  [s.receiverName, s.receiverContact].nonNulls.join(' · '),
-                                  ?collectLabel(s.paymentModeId, s.netAmount, modes),
-                                ].join('\n'),
+                          PickTile(
+                            selected: _selected.contains(s.id),
+                            onChanged: (v) => setState(() => v ? _selected.add(s.id) : _selected.remove(s.id)),
+                            title: s.trackingNumber,
+                            color: AppColors.orange,
+                            lines: [
+                              Text(
+                                [s.receiverName, s.receiverContact].nonNulls.join(' · '),
+                                style: const TextStyle(fontWeight: FontWeight.w600),
                               ),
-                            ),
+                              if (collectLabel(s.paymentModeId, s.netAmount, modes) case final c?)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Text(
+                                    c,
+                                    style: const TextStyle(
+                                      color: AppColors.warning,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                       ],
                     );

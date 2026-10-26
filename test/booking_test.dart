@@ -314,7 +314,7 @@ void main() {
       final body = creates.single.data as Map<String, dynamic>;
       expect(body['destinationAreaId'], 'area-1', reason: 'primary area picked by default');
       expect(find.text('AWB123'), findsOneWidget);
-      expect(find.text('₹531.50'), findsOneWidget);
+      expect(find.textContaining('₹531.50'), findsOneWidget);
       expect(container.read(bookingDraftProvider).senderName, isEmpty, reason: 'draft cleared after booking');
     });
 

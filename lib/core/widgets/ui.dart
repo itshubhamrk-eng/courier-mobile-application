@@ -139,9 +139,10 @@ class RouteStrip extends StatelessWidget {
         children: [
           Text(
             title,
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: fg, fontWeight: FontWeight.w700, fontSize: 16),
+            textAlign: align == CrossAxisAlignment.end ? TextAlign.right : TextAlign.left,
+            style: TextStyle(color: fg, fontWeight: FontWeight.w700, fontSize: 15),
           ),
           if (subtitle != null && subtitle.isNotEmpty)
             Text(
@@ -305,6 +306,132 @@ class AccentCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    ),
+  );
+}
+
+/// Decoration for the "scan or type AWB" box: tinted, with a gradient camera button.
+InputDecoration scanDecoration(String hint, {required VoidCallback? onScan, bool busy = false}) => InputDecoration(
+  hintText: hint,
+  filled: true,
+  fillColor: AppColors.primaryLight,
+  prefixIcon: const Icon(Icons.qr_code_scanner, color: AppColors.primary),
+  enabledBorder: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(14),
+    borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.35), width: 1.2),
+  ),
+  suffixIcon: Padding(
+    padding: const EdgeInsets.all(6),
+    child: busy
+        ? const Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator(strokeWidth: 2))
+        : DecoratedBox(
+            decoration: BoxDecoration(gradient: brandGradient, borderRadius: BorderRadius.circular(10)),
+            child: IconButton(
+              tooltip: 'Scan',
+              icon: const Icon(Icons.camera_alt_outlined, color: Colors.white),
+              onPressed: onScan,
+            ),
+          ),
+  ),
+);
+
+/// Selectable record row (loading, receiving, DRS): tints and shows a check when picked.
+class PickTile extends StatelessWidget {
+  const PickTile({
+    super.key,
+    required this.selected,
+    required this.onChanged,
+    required this.title,
+    this.badge,
+    this.lines = const [],
+    this.color = AppColors.success,
+  });
+
+  final bool selected;
+  final ValueChanged<bool> onChanged;
+  final String title;
+  final Widget? badge;
+  final List<Widget> lines;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 10),
+    child: Material(
+      color: selected ? color.withValues(alpha: 0.08) : AppColors.surface,
+      elevation: selected ? 0 : 2,
+      shadowColor: AppColors.shadow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: selected ? color : Colors.transparent, width: 1.5),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => onChanged(!selected),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: selected ? color : Colors.transparent,
+                  border: Border.all(color: selected ? color : AppColors.border, width: 2),
+                ),
+                child: selected ? const Icon(Icons.check, size: 16, color: Colors.white) : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                        ),
+                        ?badge,
+                      ],
+                    ),
+                    if (lines.isNotEmpty) const SizedBox(height: 4),
+                    ...lines,
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// Coloured figure for sticky totals bars.
+class TotalChip extends StatelessWidget {
+  const TotalChip({super.key, required this.label, required this.value, required this.color});
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+    child: Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: color),
+          ),
+          Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+        ],
       ),
     ),
   );
