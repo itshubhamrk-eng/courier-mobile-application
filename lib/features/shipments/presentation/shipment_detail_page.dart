@@ -8,6 +8,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/movement_timeline.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../../core/widgets/ui.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../masters/data/masters.dart';
 import '../data/shipment_repository.dart';
@@ -36,6 +37,7 @@ class ShipmentDetailPage extends ConsumerWidget {
     final outForDelivery = view.value?.shipment.status == 'OUT_FOR_DELIVERY';
     return Scaffold(
       appBar: AppBar(
+        flexibleSpace: const AppBarGradient(),
         title: Text(view.value?.shipment.trackingNumber ?? 'Shipment'),
         actions: [
           if (view.value case final v?)
@@ -108,65 +110,124 @@ class ShipmentViewBody extends ConsumerWidget {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       children: [
-        _Card(
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('AWB', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                      SelectableText(
-                        s.trackingNumber,
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-                      ),
-                      Text('Shipment ${s.shipmentNumber}', style: const TextStyle(color: AppColors.textSecondary)),
-                    ],
+        HeroCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('AWB', style: TextStyle(fontSize: 12, color: Colors.white70, letterSpacing: 1)),
+                        SelectableText(
+                          s.trackingNumber,
+                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.white),
+                        ),
+                        Text('Shipment ${s.shipmentNumber}', style: const TextStyle(color: Colors.white70)),
+                      ],
+                    ),
                   ),
+                  _HeroStatus(s.status),
+                ],
+              ),
+              const SizedBox(height: 18),
+              RouteStrip(
+                from: s.s('fromCity') ?? branch(s.bookingBranchId) ?? '–',
+                fromSub: s.s('pickupPincode'),
+                to: s.s('toCity') ?? branch(s.deliveryBranchId) ?? '–',
+                toSub: s.s('deliveryPincode'),
+                onDark: true,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  _HeroFact(Icons.event_outlined, 'Booked', Fmt.date(s.t('bookingDate'))),
+                  _HeroFact(Icons.flag_outlined, 'Expected', Fmt.date(s.t('expectedDeliveryDate'))),
+                ],
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: Row(
+            children: [
+              Expanded(
+                child: MetricTile(
+                  icon: Icons.inventory_2_outlined,
+                  value: '${s.n('numberOfPackages') ?? '–'}',
+                  label: 'Packages',
+                  color: AppColors.indigo,
                 ),
-                StatusBadge(s.status),
-              ],
-            ),
-            const Divider(height: 24),
-            _Row('From', [s.s('fromCity'), s.s('pickupPincode')].nonNulls.join(' · ')),
-            _Row('To', [s.s('toCity'), s.s('deliveryPincode')].nonNulls.join(' · ')),
-            _Row('Booked at', branch(s.bookingBranchId)),
-            _Row('Current location', branch(s.currentLocationId)),
-            _Row('Delivery branch', branch(s.deliveryBranchId)),
-            _Row('Booking date', Fmt.date(s.t('bookingDate'))),
-            _Row('Expected delivery', Fmt.date(s.t('expectedDeliveryDate'))),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: MetricTile(
+                  icon: Icons.scale_outlined,
+                  value: Fmt.kg(s.n('chargeableWeight')),
+                  label: 'Chargeable',
+                  color: AppColors.teal,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: MetricTile(
+                  icon: Icons.currency_rupee,
+                  value: Fmt.money(view.charges?.netAmount ?? s.n('netAmount')),
+                  label: 'Net amount',
+                  color: AppColors.orange,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SectionCard(
+          title: 'Branches',
+          icon: Icons.store_mall_directory_outlined,
+          color: AppColors.cyan,
+          children: [
+            InfoRow('Booked at', branch(s.bookingBranchId)),
+            InfoRow('Current location', branch(s.currentLocationId)),
+            InfoRow('Delivery branch', branch(s.deliveryBranchId)),
           ],
         ),
-        _Card(
+        SectionCard(
           title: 'Sender',
+          icon: Icons.north_east,
+          color: AppColors.indigo,
           children: [
-            _Row('Name', s.s('senderName')),
-            _Row('Contact', s.s('senderContact')),
-            _Row('Address', s.s('senderAddress')),
+            InfoRow('Name', s.s('senderName')),
+            InfoRow('Contact', s.s('senderContact')),
+            InfoRow('Address', s.s('senderAddress')),
           ],
         ),
-        _Card(
+        SectionCard(
           title: 'Receiver',
+          icon: Icons.south_west,
+          color: AppColors.green,
           children: [
-            _Row('Name', s.s('receiverName')),
-            _Row('Contact', s.s('receiverContact')),
-            _Row('Address', s.s('receiverAddress')),
-            _Row('Delivery', s.s('deliveryType') == 'OFFICE' ? 'Office collection' : 'Door delivery'),
+            InfoRow('Name', s.s('receiverName')),
+            InfoRow('Contact', s.s('receiverContact')),
+            InfoRow('Address', s.s('receiverAddress')),
+            InfoRow('Delivery', s.s('deliveryType') == 'OFFICE' ? 'Office collection' : 'Door delivery'),
           ],
         ),
-        _Card(
+        SectionCard(
           title: 'Package',
+          icon: Icons.inventory_2_outlined,
+          color: AppColors.purple,
           children: [
-            _Row('Packages', s.n('numberOfPackages')?.toString()),
-            _Row('Actual weight', Fmt.kg(s.n('actualWeight'))),
-            _Row('Volumetric weight', Fmt.kg(s.n('volumetricWeight'))),
-            _Row('Chargeable weight', Fmt.kg(s.n('chargeableWeight'))),
-            _Row('Declared value', Fmt.money(s.n('declaredValue'))),
-            _Row('Service', option(serviceTypes, s.serviceTypeId)),
-            _Row('Payment', option(paymentModes, s.paymentModeId)),
+            InfoRow('Actual weight', Fmt.kg(s.n('actualWeight'))),
+            InfoRow('Volumetric weight', Fmt.kg(s.n('volumetricWeight'))),
+            InfoRow('Chargeable weight', Fmt.kg(s.n('chargeableWeight'))),
+            InfoRow('Declared value', Fmt.money(s.n('declaredValue'))),
+            InfoRow('Service', option(serviceTypes, s.serviceTypeId)),
+            InfoRow('Payment', option(paymentModes, s.paymentModeId)),
             for (final i in s.items)
-              _Row(
+              InfoRow(
                 i.name ?? 'Item',
                 [
                   '${i.quantity ?? 1} pc',
@@ -177,17 +238,28 @@ class ShipmentViewBody extends ConsumerWidget {
           ],
         ),
         if (view.charges case final c?)
-          _Card(
+          SectionCard(
             title: 'Charges',
+            icon: Icons.receipt_long_outlined,
+            color: AppColors.orange,
             children: [
-              for (final l in [...c.lines, ...c.adjustments]) _Row(l.label, Fmt.money(l.amount)),
-              const Divider(),
-              _Row('Net amount', Fmt.money(c.netAmount), bold: true),
+              for (final l in [...c.lines, ...c.adjustments]) InfoRow(l.label, Fmt.money(l.amount)),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.orange.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: InfoRow('Net amount', Fmt.money(c.netAmount), bold: true),
+              ),
             ],
           ),
         if (view.sheets.isNotEmpty || view.deliveryRun?.drsNumber != null)
-          _Card(
+          SectionCard(
             title: 'Loading sheet, THC and DRS',
+            icon: Icons.local_shipping_outlined,
+            color: AppColors.teal,
             children: [
               for (final sh in view.sheets)
                 _LinkTile(
@@ -228,8 +300,10 @@ class ShipmentViewBody extends ConsumerWidget {
             ],
           ),
         if (view.files.isNotEmpty)
-          _Card(
+          SectionCard(
             title: 'Documents',
+            icon: Icons.folder_open_outlined,
+            color: AppColors.cyan,
             children: [
               for (final f in view.files)
                 _LinkTile(
@@ -241,12 +315,14 @@ class ShipmentViewBody extends ConsumerWidget {
             ],
           ),
         if (view.pod case final p?)
-          _Card(
+          SectionCard(
             title: 'Proof of delivery',
+            icon: Icons.verified_outlined,
+            color: AppColors.green,
             children: [
-              _Row('Status', [p.entryStatus, p.verificationStatus].nonNulls.join(' · ')),
-              _Row('Delivery date', Fmt.date(p.deliveryDate)),
-              if (p.remark != null) _Row('Remark', p.remark),
+              InfoRow('Status', [p.entryStatus, p.verificationStatus].nonNulls.join(' · ')),
+              InfoRow('Delivery date', Fmt.date(p.deliveryDate)),
+              if (p.remark != null) InfoRow('Remark', p.remark),
               if (p.photoUrl != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
@@ -263,8 +339,10 @@ class ShipmentViewBody extends ConsumerWidget {
             ],
           ),
         if (view.attempts.isNotEmpty)
-          _Card(
+          SectionCard(
             title: 'Delivery attempts',
+            icon: Icons.event_repeat,
+            color: AppColors.warning,
             children: [
               for (final a in view.attempts)
                 ListTile(
@@ -289,8 +367,10 @@ class ShipmentViewBody extends ConsumerWidget {
                 ),
             ],
           ),
-        _Card(
+        SectionCard(
           title: 'Movement',
+          icon: Icons.timeline,
+          color: AppColors.primary,
           children: [
             if (timeline.isEmpty) const Text('No movement recorded yet.') else MovementTimeline(entries: timeline),
           ],
@@ -319,60 +399,57 @@ class ShipmentViewBody extends ConsumerWidget {
   }
 }
 
-class _Card extends StatelessWidget {
-  const _Card({required this.children, this.title});
+class _HeroStatus extends StatelessWidget {
+  const _HeroStatus(this.status);
 
-  final String? title;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (title != null) ...[
-              Text(title!, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-              const SizedBox(height: 8),
-            ],
-            ...children,
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
-class _Row extends StatelessWidget {
-  const _Row(this.label, this.value, {this.bold = false});
-
-  final String label;
-  final String? value;
-  final bool bold;
+  final String status;
 
   @override
   Widget build(BuildContext context) {
-    final v = value;
-    if (v == null || v.isEmpty || v == '–') return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 130,
-            child: Text(label, style: const TextStyle(color: AppColors.textSecondary)),
-          ),
-          Expanded(
-            child: Text(v, style: TextStyle(fontWeight: bold ? FontWeight.w700 : FontWeight.w500)),
-          ),
-        ],
+    final style = statusStyle(status);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+      child: Text(
+        style.label,
+        style: TextStyle(color: style.color, fontWeight: FontWeight.w700, fontSize: 12),
       ),
     );
   }
+}
+
+class _HeroFact extends StatelessWidget {
+  const _HeroFact(this.icon, this.label, this.value);
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+    child: Row(
+      children: [
+        Icon(icon, size: 18, color: Colors.white70),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: '$label  ',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+                TextSpan(
+                  text: value,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _LinkTile extends StatelessWidget {
@@ -387,7 +464,7 @@ class _LinkTile extends StatelessWidget {
   Widget build(BuildContext context) => ListTile(
     contentPadding: EdgeInsets.zero,
     dense: true,
-    leading: Icon(icon, color: AppColors.primary),
+    leading: IconBadge(icon, size: 34),
     title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
     subtitle: subtitle.isEmpty ? null : Text(subtitle),
     trailing: onTap == null ? null : const Icon(Icons.chevron_right),
@@ -404,7 +481,7 @@ Future<void> openShipmentFile(BuildContext context, WidgetRef ref, ShipmentFile 
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => Scaffold(
-          appBar: AppBar(title: Text(f.label)),
+          appBar: AppBar(flexibleSpace: const AppBarGradient(), title: Text(f.label)),
           backgroundColor: Colors.black,
           body: InteractiveViewer(
             child: Center(

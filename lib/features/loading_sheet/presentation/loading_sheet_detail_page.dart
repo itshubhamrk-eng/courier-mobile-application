@@ -15,6 +15,7 @@ import '../../shipments/presentation/bookings_list_page.dart';
 import '../data/loading_sheet_repository.dart';
 import '../../documents/document_page.dart';
 import '../../documents/document_service.dart';
+import '../../../core/widgets/ui.dart';
 
 typedef SheetWithShipments = ({LoadingSheet sheet, List<ShipmentSummary> shipments});
 
@@ -38,6 +39,7 @@ class LoadingSheetDetailPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        flexibleSpace: const AppBarGradient(),
         title: Text(data.value?.sheet.number ?? 'Loading Sheet'),
         actions: [
           if (data.value case final v?)

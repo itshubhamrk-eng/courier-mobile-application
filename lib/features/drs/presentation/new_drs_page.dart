@@ -17,6 +17,7 @@ import 'drs_widgets.dart';
 import '../../../core/scan_code.dart';
 import '../../documents/document_page.dart';
 import '../../documents/document_service.dart';
+import '../../../core/widgets/ui.dart';
 
 /// Make a DRS: pick shipments waiting for delivery, assign a delivery partner.
 class NewDrsPage extends ConsumerStatefulWidget {
@@ -191,7 +192,7 @@ class _NewDrsPageState extends ConsumerState<NewDrsPage> {
     final picked = _list.where((s) => _selected.contains(s.id)).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('New DRS')),
+      appBar: AppBar(flexibleSpace: const AppBarGradient(), title: const Text('New DRS')),
       body: Column(
         children: [
           Expanded(
@@ -409,7 +410,11 @@ class _ResultPage extends ConsumerWidget {
     final failed = result.results.where((o) => !o.success).toList();
     final branchId = ref.watch(sessionProvider)?.operatingBranchId;
     return Scaffold(
-      appBar: AppBar(title: const Text('DRS generated'), automaticallyImplyLeading: false),
+      appBar: AppBar(
+        flexibleSpace: const AppBarGradient(),
+        title: const Text('DRS generated'),
+        automaticallyImplyLeading: false,
+      ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

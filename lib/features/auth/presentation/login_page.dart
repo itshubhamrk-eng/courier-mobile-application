@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/ui.dart';
 import '../../../core/widgets/submit_button.dart';
 import '../application/auth_controller.dart';
 
@@ -56,84 +57,119 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final expired = state is AuthSignedOut && state.expired;
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: AutofillGroup(
-                child: Form(
-                  key: _form,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const Icon(Icons.local_shipping_rounded, size: 56, color: AppColors.primary),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Courier Pro',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Sign in with your branch account',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: AppColors.textSecondary),
-                      ),
-                      const SizedBox(height: 28),
-                      if (expired && _error == null)
-                        const _Banner(
-                          icon: Icons.lock_clock_outlined,
-                          color: AppColors.warning,
-                          text: 'Your session has expired. Please sign in again.',
-                        ),
-                      if (_error != null) _Banner(icon: Icons.error_outline, color: AppColors.danger, text: _error!),
-                      TextFormField(
-                        controller: _company,
-                        textCapitalization: TextCapitalization.characters,
-                        textInputAction: TextInputAction.next,
-                        decoration: const InputDecoration(
-                          labelText: 'Company code',
-                          hintText: 'e.g. ACME_LOGISTICS',
-                          prefixIcon: Icon(Icons.business_outlined),
-                        ),
-                        validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter your company code' : null,
-                      ),
-                      const SizedBox(height: 14),
-                      TextFormField(
-                        controller: _email,
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        autofillHints: const [AutofillHints.username, AutofillHints.email],
-                        decoration: const InputDecoration(
-                          labelText: 'Email or mobile number',
-                          prefixIcon: Icon(Icons.person_outline),
-                        ),
-                        validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter your email or mobile number' : null,
-                      ),
-                      const SizedBox(height: 14),
-                      TextFormField(
-                        controller: _password,
-                        obscureText: _hidePassword,
-                        textInputAction: TextInputAction.done,
-                        autofillHints: const [AutofillHints.password],
-                        onFieldSubmitted: (_) => _submit(),
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          prefixIcon: const Icon(Icons.lock_outline),
-                          suffixIcon: IconButton(
-                            tooltip: _hidePassword ? 'Show password' : 'Hide password',
-                            icon: Icon(_hidePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
-                            onPressed: () => setState(() => _hidePassword = !_hidePassword),
+      body: DecoratedBox(
+        decoration: const BoxDecoration(gradient: brandGradient),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: AutofillGroup(
+                  child: Form(
+                    key: _form,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 84,
+                            height: 84,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(26),
+                              boxShadow: const [
+                                BoxShadow(color: Color(0x33000000), blurRadius: 18, offset: Offset(0, 8)),
+                              ],
+                            ),
+                            child: const Icon(Icons.local_shipping_rounded, size: 46, color: AppColors.primary),
                           ),
                         ),
-                        validator: (v) => (v == null || v.isEmpty) ? 'Enter your password' : null,
-                      ),
-                      const SizedBox(height: 24),
-                      SubmitButton(label: 'Sign in', onPressed: _submit),
-                    ],
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Courier Pro',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Book, load, dispatch and deliver',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                        const SizedBox(height: 28),
+                        Card(
+                          elevation: 8,
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                const Text(
+                                  'Sign in with your branch account',
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                                ),
+                                const SizedBox(height: 16),
+                                if (expired && _error == null)
+                                  const _Banner(
+                                    icon: Icons.lock_clock_outlined,
+                                    color: AppColors.warning,
+                                    text: 'Your session has expired. Please sign in again.',
+                                  ),
+                                if (_error != null)
+                                  _Banner(icon: Icons.error_outline, color: AppColors.danger, text: _error!),
+                                TextFormField(
+                                  controller: _company,
+                                  textCapitalization: TextCapitalization.characters,
+                                  textInputAction: TextInputAction.next,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Company code',
+                                    hintText: 'e.g. ACME_LOGISTICS',
+                                    prefixIcon: Icon(Icons.business_outlined),
+                                  ),
+                                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter your company code' : null,
+                                ),
+                                const SizedBox(height: 14),
+                                TextFormField(
+                                  controller: _email,
+                                  keyboardType: TextInputType.emailAddress,
+                                  textInputAction: TextInputAction.next,
+                                  autofillHints: const [AutofillHints.username, AutofillHints.email],
+                                  decoration: const InputDecoration(
+                                    labelText: 'Email or mobile number',
+                                    prefixIcon: Icon(Icons.person_outline),
+                                  ),
+                                  validator: (v) =>
+                                      (v == null || v.trim().isEmpty) ? 'Enter your email or mobile number' : null,
+                                ),
+                                const SizedBox(height: 14),
+                                TextFormField(
+                                  controller: _password,
+                                  obscureText: _hidePassword,
+                                  textInputAction: TextInputAction.done,
+                                  autofillHints: const [AutofillHints.password],
+                                  onFieldSubmitted: (_) => _submit(),
+                                  decoration: InputDecoration(
+                                    labelText: 'Password',
+                                    prefixIcon: const Icon(Icons.lock_outline),
+                                    suffixIcon: IconButton(
+                                      tooltip: _hidePassword ? 'Show password' : 'Hide password',
+                                      icon: Icon(
+                                        _hidePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                      ),
+                                      onPressed: () => setState(() => _hidePassword = !_hidePassword),
+                                    ),
+                                  ),
+                                  validator: (v) => (v == null || v.isEmpty) ? 'Enter your password' : null,
+                                ),
+                                const SizedBox(height: 24),
+                                SubmitButton(label: 'Sign in', onPressed: _submit),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

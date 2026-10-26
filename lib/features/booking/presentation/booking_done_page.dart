@@ -9,6 +9,7 @@ import '../../../core/widgets/state_views.dart';
 import '../../shipments/data/shipment_repository.dart';
 import '../../documents/document_page.dart';
 import '../../documents/document_service.dart';
+import '../../../core/widgets/ui.dart';
 
 /// After booking: the server's AWB and its final charges.
 class BookingDonePage extends ConsumerWidget {
@@ -22,7 +23,11 @@ class BookingDonePage extends ConsumerWidget {
     final view = ref.watch(shipmentViewByIdProvider(key));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Booked'), automaticallyImplyLeading: false),
+      appBar: AppBar(
+        flexibleSpace: const AppBarGradient(),
+        title: const Text('Booked'),
+        automaticallyImplyLeading: false,
+      ),
       body: switch (view) {
         AsyncData(:final value) => ListView(
           padding: const EdgeInsets.all(20),

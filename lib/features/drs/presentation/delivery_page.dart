@@ -6,6 +6,7 @@ import '../../../core/auth/permissions.dart';
 import '../../../core/format.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/state_views.dart';
+import '../../../core/widgets/ui.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../masters/data/masters.dart';
 import '../../thc/data/thc_repository.dart';
@@ -103,21 +104,28 @@ class _ReceiveTab extends ConsumerWidget {
               child: Text('Incoming THCs: tap to receive', style: TextStyle(fontWeight: FontWeight.w700)),
             ),
             for (final s in value)
-              Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: ListTile(
-                  leading: const Icon(Icons.move_to_inbox_outlined, color: AppColors.primary),
-                  title: Text(s.number, style: const TextStyle(fontWeight: FontWeight.w700)),
-                  subtitle: Text(
-                    'From ${branches[s.fromBranchId]?.label ?? '–'}\n'
-                    '${s.shipmentCount} shipments · dispatched ${Fmt.dateTime(s.dispatchedAt)}',
-                  ),
-                  isThreeLine: true,
-                  trailing: const Icon(Icons.chevron_right),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: AccentCard(
+                  color: AppColors.teal,
+                  icon: Icons.move_to_inbox_outlined,
+                  title: s.number,
+                  trailing: const Icon(Icons.chevron_right, color: AppColors.teal),
                   onTap: () async {
                     await context.push('/receive/${s.id}');
                     ref.invalidate(incomingSheetsProvider);
                   },
+                  children: [
+                    Text(
+                      'From ${branches[s.fromBranchId]?.label ?? '–'}',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${s.shipmentCount} shipments · dispatched ${Fmt.dateTime(s.dispatchedAt)}',
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    ),
+                  ],
                 ),
               ),
           ],
@@ -164,16 +172,12 @@ class _RunsTab extends ConsumerWidget {
             ],
             AsyncData(:final value) => [
               for (final r in value)
-                Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    title: Text(r.drsNumber ?? 'DRS', style: const TextStyle(fontWeight: FontWeight.w700)),
-                    subtitle: Text(
-                      '${partner(r.deliveryUserId)} · ${Fmt.date(r.runDate)}\n'
-                      '${r.shipmentCount} shipments · ${r.deliveredCount} delivered · ${r.pendingCount} pending'
-                      '${r.failedCount > 0 ? ' · ${r.failedCount} failed' : ''}',
-                    ),
-                    isThreeLine: true,
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: AccentCard(
+                    color: r.pendingCount == 0 ? AppColors.success : AppColors.orange,
+                    icon: Icons.delivery_dining_outlined,
+                    title: r.drsNumber ?? 'DRS',
                     trailing: _Progress(done: r.deliveredCount, total: r.shipmentCount),
                     onTap: () => context.push(
                       Uri(
@@ -185,6 +189,23 @@ class _RunsTab extends ConsumerWidget {
                         },
                       ).toString(),
                     ),
+                    children: [
+                      Text(
+                        '${partner(r.deliveryUserId)} · ${Fmt.date(r.runDate)}',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          _Count('${r.shipmentCount} total', AppColors.indigo),
+                          _Count('${r.deliveredCount} delivered', AppColors.success),
+                          _Count('${r.pendingCount} pending', AppColors.orange),
+                          if (r.failedCount > 0) _Count('${r.failedCount} failed', AppColors.danger),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
             ],
@@ -223,6 +244,23 @@ class _Progress extends StatelessWidget {
         ),
         Text('$done/$total', style: const TextStyle(fontSize: 11)),
       ],
+    ),
+  );
+}
+
+class _Count extends StatelessWidget {
+  const _Count(this.text, this.color);
+
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+    child: Text(
+      text,
+      style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w700),
     ),
   );
 }

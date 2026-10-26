@@ -8,6 +8,7 @@ import '../../../core/widgets/state_views.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../shipments/data/shipment_repository.dart';
 import '../../shipments/presentation/shipment_detail_page.dart';
+import '../../../core/widgets/ui.dart';
 
 class TrackPage extends ConsumerStatefulWidget {
   const TrackPage({super.key, this.initialAwb});
@@ -77,7 +78,7 @@ class _TrackPageState extends ConsumerState<TrackPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Track Shipment')),
+    appBar: AppBar(flexibleSpace: const AppBarGradient(), title: const Text('Track Shipment')),
     body: Column(
       children: [
         Padding(

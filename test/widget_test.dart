@@ -42,6 +42,7 @@ void main() {
     await tester.pumpWidget(app(FakeAdapter((_) async => (status: 401, body: errorBody('Invalid email or password')))));
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(find.text('Sign in'));
     await tester.tap(find.text('Sign in'));
     await tester.pumpAndSettle();
     expect(find.text('Enter your company code'), findsOneWidget);
@@ -49,6 +50,7 @@ void main() {
     await tester.enterText(find.widgetWithText(TextFormField, 'Company code'), 'ACME');
     await tester.enterText(find.widgetWithText(TextFormField, 'Email or mobile number'), 'a@b.test');
     await tester.enterText(find.widgetWithText(TextFormField, 'Password'), 'wrong');
+    await tester.ensureVisible(find.text('Sign in'));
     await tester.tap(find.text('Sign in'));
     await tester.pumpAndSettle();
 

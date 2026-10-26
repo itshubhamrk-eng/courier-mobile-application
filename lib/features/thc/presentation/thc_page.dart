@@ -18,6 +18,7 @@ import 'staff_picker.dart';
 import '../../../core/scan_code.dart';
 import '../../documents/document_page.dart';
 import '../../documents/document_service.dart';
+import '../../../core/widgets/ui.dart';
 
 /// Generate THC. Without [manifestId] it first lists the branch's open loading sheets.
 class ThcPage extends ConsumerWidget {
@@ -30,7 +31,7 @@ class ThcPage extends ConsumerWidget {
     if (manifestId != null) return _ThcForm(manifestId: manifestId!);
     final open = ref.watch(loadingSheetsProvider('CREATED'));
     return Scaffold(
-      appBar: AppBar(title: const Text('Generate THC')),
+      appBar: AppBar(flexibleSpace: const AppBarGradient(), title: const Text('Generate THC')),
       body: switch (open) {
         AsyncData(:final value) when value.isEmpty => const EmptyView(
           message: 'No open loading sheets. Create a loading sheet first.',
@@ -278,7 +279,7 @@ class _ThcFormState extends ConsumerState<_ThcForm> {
     final branches = ref.watch(branchNamesProvider).value ?? const <String, Branch>{};
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Generate THC')),
+      appBar: AppBar(flexibleSpace: const AppBarGradient(), title: const Text('Generate THC')),
       body: switch (data) {
         AsyncData(:final value) when _result != null => _ResultView(result: _result!, sheet: value),
         AsyncData(:final value) when !value.sheet.isOpen => _AlreadyDispatched(manifestId: widget.manifestId),
@@ -357,69 +358,85 @@ class _ThcFormState extends ConsumerState<_ThcForm> {
               ],
             ),
           ],
-          const _Heading('Vehicle and driver'),
-          switch (vehicles) {
-            AsyncData(:final value) when value.isEmpty => const Text(
-              'No active vehicles. Add one in the web app first.',
-              style: TextStyle(color: AppColors.danger),
-            ),
-            AsyncData(:final value) => DropdownButtonFormField<String>(
-              initialValue: _vehicleId,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Vehicle', prefixIcon: Icon(Icons.local_shipping_outlined)),
-              items: [for (final v in value) DropdownMenuItem(value: v.id, child: Text(v.label))],
-              onChanged: (v) => setState(() => _vehicleId = v),
-              validator: (v) => v == null ? 'Pick the vehicle' : null,
-            ),
-            AsyncError(:final error) => ErrorView(error: error, onRetry: () => ref.invalidate(vehiclesProvider)),
-            _ => const LinearProgressIndicator(),
-          },
-          const SizedBox(height: 12),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.badge_outlined, color: AppColors.primary),
-              title: Text(_driver?.name ?? 'Pick driver'),
-              subtitle: _driver == null ? null : Text([_driver!.mobile, _driver!.designation].nonNulls.join(' · ')),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: _pickDriver,
-            ),
-          ),
-          if (_driver != null) _otpRow(),
-          const SizedBox(height: 12),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.schedule, color: AppColors.primary),
-              title: const Text('Departure'),
-              subtitle: Text(Fmt.dateTime(_departure)),
-              trailing: const Icon(Icons.edit_calendar_outlined),
-              onTap: _pickDeparture,
-            ),
-          ),
-          const _Heading('Trip expenses (optional)'),
-          Row(
+          const SizedBox(height: 14),
+          SectionCard(
+            title: 'Vehicle and driver',
+            icon: Icons.local_shipping_outlined,
+            color: AppColors.teal,
             children: [
-              Expanded(
-                child: _MoneyField(controller: _amounts['fuel']!, label: 'Fuel (₹)'),
+              switch (vehicles) {
+                AsyncData(:final value) when value.isEmpty => const Text(
+                  'No active vehicles. Add one in the web app first.',
+                  style: TextStyle(color: AppColors.danger),
+                ),
+                AsyncData(:final value) => DropdownButtonFormField<String>(
+                  initialValue: _vehicleId,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Vehicle',
+                    prefixIcon: Icon(Icons.local_shipping_outlined),
+                  ),
+                  items: [for (final v in value) DropdownMenuItem(value: v.id, child: Text(v.label))],
+                  onChanged: (v) => setState(() => _vehicleId = v),
+                  validator: (v) => v == null ? 'Pick the vehicle' : null,
+                ),
+                AsyncError(:final error) => ErrorView(error: error, onRetry: () => ref.invalidate(vehiclesProvider)),
+                _ => const LinearProgressIndicator(),
+              },
+              const SizedBox(height: 12),
+              _Inset(
+                child: ListTile(
+                  leading: const Icon(Icons.badge_outlined, color: AppColors.primary),
+                  title: Text(_driver?.name ?? 'Pick driver'),
+                  subtitle: _driver == null ? null : Text([_driver!.mobile, _driver!.designation].nonNulls.join(' · ')),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _pickDriver,
+                ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _MoneyField(controller: _amounts['advance']!, label: 'Driver advance (₹)'),
+              if (_driver != null) _otpRow(),
+              const SizedBox(height: 12),
+              _Inset(
+                child: ListTile(
+                  leading: const Icon(Icons.schedule, color: AppColors.primary),
+                  title: const Text('Departure'),
+                  subtitle: Text(Fmt.dateTime(_departure)),
+                  trailing: const Icon(Icons.edit_calendar_outlined),
+                  onTap: _pickDeparture,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Row(
+          SectionCard(
+            title: 'Trip expenses (optional)',
+            icon: Icons.payments_outlined,
+            color: AppColors.orange,
             children: [
-              Expanded(
-                child: _MoneyField(controller: _amounts['toll']!, label: 'Toll (₹)'),
+              Row(
+                children: [
+                  Expanded(
+                    child: _MoneyField(controller: _amounts['fuel']!, label: 'Fuel (₹)'),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _MoneyField(controller: _amounts['advance']!, label: 'Driver advance (₹)'),
+                  ),
+                ],
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _MoneyField(controller: _amounts['other']!, label: 'Other (₹)'),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _MoneyField(controller: _amounts['toll']!, label: 'Toll (₹)'),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _MoneyField(controller: _amounts['other']!, label: 'Other (₹)'),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 6),
           FilledButton.icon(
             onPressed: _submitting ? null : () => _generate(data, fromHub: fromHub),
             icon: _submitting
@@ -617,5 +634,20 @@ class _Heading extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(top: 20, bottom: 10),
     child: Text(text, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+  );
+}
+
+/// Field-coloured tile for tappable rows inside a [SectionCard].
+class _Inset extends StatelessWidget {
+  const _Inset({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: AppColors.field,
+    borderRadius: BorderRadius.circular(12),
+    clipBehavior: Clip.antiAlias,
+    child: child,
   );
 }

@@ -11,6 +11,7 @@ import '../../loading_sheet/presentation/loading_sheet_detail_page.dart';
 import '../../masters/data/masters.dart';
 import '../data/drs_repository.dart';
 import '../../../core/scan_code.dart';
+import '../../../core/widgets/ui.dart';
 
 /// Receive an incoming THC: scan or tick what arrived; the rest is reported missing.
 class ReceivePage extends ConsumerStatefulWidget {
@@ -91,7 +92,7 @@ class _ReceivePageState extends ConsumerState<ReceivePage> {
     final data = ref.watch(loadingSheetDetailProvider(widget.manifestId));
     final branches = ref.watch(branchNamesProvider).value ?? const <String, Branch>{};
     return Scaffold(
-      appBar: AppBar(title: Text(data.value?.sheet.number ?? 'Receive')),
+      appBar: AppBar(flexibleSpace: const AppBarGradient(), title: Text(data.value?.sheet.number ?? 'Receive')),
       body: switch (data) {
         AsyncData() when _result != null => _ResultView(result: _result!),
         AsyncData(:final value) => Column(

@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/format.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/ui.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../masters/data/masters.dart';
@@ -106,6 +107,7 @@ class _BookingPageState extends ConsumerState<BookingPage> {
       },
       child: Scaffold(
         appBar: AppBar(
+          flexibleSpace: const AppBarGradient(),
           title: const Text('Book Shipment'),
           leading: IconButton(
             icon: const Icon(Icons.close),
@@ -150,9 +152,17 @@ class _BookingPageState extends ConsumerState<BookingPage> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _businessCustomerPicker(),
-                        const _Section('Destination'),
-                        _destinationStep(),
-                        const _Section('Packages'),
+                        const SizedBox(height: 14),
+                        SectionCard(
+                          title: 'Destination',
+                          icon: Icons.place_outlined,
+                          color: AppColors.danger,
+                          children: [_destinationStep()],
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 12, left: 4),
+                          child: SectionTitle('Packages', icon: Icons.inventory_2_outlined, color: AppColors.purple),
+                        ),
                         _packagesStep(),
                       ],
                     ),
@@ -220,19 +230,39 @@ class _BookingPageState extends ConsumerState<BookingPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _Section('Sender (consignor)'),
-          _PartyFields(
-            prefix: 'sender',
-            name: _ctl('senderName', d.senderName, (v) => _update((x) => x.copyWith(senderName: v))),
-            contact: _ctl('senderContact', d.senderContact, (v) => _update((x) => x.copyWith(senderContact: v))),
-            address: _ctl('senderAddress', d.senderAddress, (v) => _update((x) => x.copyWith(senderAddress: v))),
+          SectionCard(
+            title: 'Sender (consignor)',
+            icon: Icons.north_east,
+            color: AppColors.indigo,
+            children: [
+              _PartyFields(
+                prefix: 'sender',
+                name: _ctl('senderName', d.senderName, (v) => _update((x) => x.copyWith(senderName: v))),
+                contact: _ctl('senderContact', d.senderContact, (v) => _update((x) => x.copyWith(senderContact: v))),
+                address: _ctl('senderAddress', d.senderAddress, (v) => _update((x) => x.copyWith(senderAddress: v))),
+              ),
+            ],
           ),
-          const _Section('Receiver (consignee)'),
-          _PartyFields(
-            prefix: 'receiver',
-            name: _ctl('receiverName', d.receiverName, (v) => _update((x) => x.copyWith(receiverName: v))),
-            contact: _ctl('receiverContact', d.receiverContact, (v) => _update((x) => x.copyWith(receiverContact: v))),
-            address: _ctl('receiverAddress', d.receiverAddress, (v) => _update((x) => x.copyWith(receiverAddress: v))),
+          SectionCard(
+            title: 'Receiver (consignee)',
+            icon: Icons.south_west,
+            color: AppColors.green,
+            children: [
+              _PartyFields(
+                prefix: 'receiver',
+                name: _ctl('receiverName', d.receiverName, (v) => _update((x) => x.copyWith(receiverName: v))),
+                contact: _ctl(
+                  'receiverContact',
+                  d.receiverContact,
+                  (v) => _update((x) => x.copyWith(receiverContact: v)),
+                ),
+                address: _ctl(
+                  'receiverAddress',
+                  d.receiverAddress,
+                  (v) => _update((x) => x.copyWith(receiverAddress: v)),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -352,76 +382,83 @@ class _BookingPageState extends ConsumerState<BookingPage> {
             icon: const Icon(Icons.add),
             label: const Text('Add another package'),
           ),
-          const SizedBox(height: 16),
-          if (d.multiPackage) ...[
-            _ComputedField(
-              label: 'Number of packages (boxes)',
-              value: '${d.packageCount}',
-              note: 'Total quantity of all packages',
-            ),
-            const SizedBox(height: 14),
-            _ComputedField(
-              label: 'Invoice value (₹)',
-              value: d.invoiceAmount == null ? '' : Fmt.money(d.invoiceAmount),
-              note: 'Sum of the declared values',
-            ),
-          ] else ...[
-            _NumberField(
-              label: 'Number of packages (boxes)',
-              initial: d.numberOfPackages,
-              hint: '${d.totalQuantity}',
-              integer: true,
-              onChanged: (v) => _update((x) => x.copyWith(numberOfPackages: v?.toInt())),
-            ),
-            const SizedBox(height: 14),
-            _NumberField(
-              label: 'Invoice value (₹)',
-              initial: d.invoiceValue,
-              onChanged: (v) => _update((x) => x.copyWith(invoiceValue: v)),
-            ),
-          ],
-          if (needsEway) ...[
-            const _Section('E-Way Bill'),
-            Text(
-              'Required: invoice value is ₹${settings!.ewayBillThreshold} or more.',
-              style: const TextStyle(color: AppColors.warning),
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _ctl(
-                'ewayInvoiceNumber',
-                d.ewayInvoiceNumber,
-                (v) => _update((x) => x.copyWith(ewayInvoiceNumber: v)),
-              ),
-              decoration: const InputDecoration(labelText: 'Invoice number'),
-              validator: (v) => (v ?? '').trim().isEmpty ? 'Invoice number is required for the E-Way Bill' : null,
-            ),
-            const SizedBox(height: 10),
-            TextFormField(
-              controller: _ctl(
-                'ewayConsignorGstin',
-                d.ewayConsignorGstin,
-                (v) => _update((x) => x.copyWith(ewayConsignorGstin: v)),
-              ),
-              textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(labelText: 'Consignor GSTIN (optional)'),
-            ),
-            const SizedBox(height: 10),
-            TextFormField(
-              controller: _ctl(
-                'ewayConsigneeGstin',
-                d.ewayConsigneeGstin,
-                (v) => _update((x) => x.copyWith(ewayConsigneeGstin: v)),
-              ),
-              textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(labelText: 'Consignee GSTIN (optional)'),
-            ),
-          ],
           const SizedBox(height: 14),
-          TextFormField(
-            controller: _ctl('remarks', d.remarks, (v) => _update((x) => x.copyWith(remarks: v))),
-            decoration: const InputDecoration(labelText: 'Remarks (optional)'),
-            maxLines: 2,
+          SectionCard(
+            title: 'Totals',
+            icon: Icons.calculate_outlined,
+            color: AppColors.teal,
+            children: [
+              if (d.multiPackage) ...[
+                _ComputedField(
+                  label: 'Number of packages (boxes)',
+                  value: '${d.packageCount}',
+                  note: 'Total quantity of all packages',
+                ),
+                const SizedBox(height: 14),
+                _ComputedField(
+                  label: 'Invoice value (₹)',
+                  value: d.invoiceAmount == null ? '' : Fmt.money(d.invoiceAmount),
+                  note: 'Sum of the declared values',
+                ),
+              ] else ...[
+                _NumberField(
+                  label: 'Number of packages (boxes)',
+                  initial: d.numberOfPackages,
+                  hint: '${d.totalQuantity}',
+                  integer: true,
+                  onChanged: (v) => _update((x) => x.copyWith(numberOfPackages: v?.toInt())),
+                ),
+                const SizedBox(height: 14),
+                _NumberField(
+                  label: 'Invoice value (₹)',
+                  initial: d.invoiceValue,
+                  onChanged: (v) => _update((x) => x.copyWith(invoiceValue: v)),
+                ),
+              ],
+              if (needsEway) ...[
+                const _Section('E-Way Bill'),
+                Text(
+                  'Required: invoice value is ₹${settings!.ewayBillThreshold} or more.',
+                  style: const TextStyle(color: AppColors.warning),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _ctl(
+                    'ewayInvoiceNumber',
+                    d.ewayInvoiceNumber,
+                    (v) => _update((x) => x.copyWith(ewayInvoiceNumber: v)),
+                  ),
+                  decoration: const InputDecoration(labelText: 'Invoice number'),
+                  validator: (v) => (v ?? '').trim().isEmpty ? 'Invoice number is required for the E-Way Bill' : null,
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  controller: _ctl(
+                    'ewayConsignorGstin',
+                    d.ewayConsignorGstin,
+                    (v) => _update((x) => x.copyWith(ewayConsignorGstin: v)),
+                  ),
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: const InputDecoration(labelText: 'Consignor GSTIN (optional)'),
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  controller: _ctl(
+                    'ewayConsigneeGstin',
+                    d.ewayConsigneeGstin,
+                    (v) => _update((x) => x.copyWith(ewayConsigneeGstin: v)),
+                  ),
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: const InputDecoration(labelText: 'Consignee GSTIN (optional)'),
+                ),
+              ],
+              const SizedBox(height: 14),
+              TextFormField(
+                controller: _ctl('remarks', d.remarks, (v) => _update((x) => x.copyWith(remarks: v))),
+                decoration: const InputDecoration(labelText: 'Remarks (optional)'),
+                maxLines: 2,
+              ),
+            ],
           ),
         ],
       ),
@@ -478,20 +515,27 @@ class _ChargesStep extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _OptionDropdown(
-          label: 'Service type',
-          options: ref.watch(serviceTypesProvider),
-          value: d.serviceTypeId,
-          onRetry: () => ref.invalidate(serviceTypesProvider),
-          onChanged: (v) => ref.read(bookingDraftProvider.notifier).update((x) => x.copyWith(serviceTypeId: v)),
-        ),
-        const SizedBox(height: 12),
-        _OptionDropdown(
-          label: 'Payment mode',
-          options: ref.watch(paymentModesProvider),
-          value: d.paymentModeId,
-          onRetry: () => ref.invalidate(paymentModesProvider),
-          onChanged: (v) => ref.read(bookingDraftProvider.notifier).update((x) => x.copyWith(paymentModeId: v)),
+        SectionCard(
+          title: 'Service & payment',
+          icon: Icons.tune,
+          color: AppColors.indigo,
+          children: [
+            _OptionDropdown(
+              label: 'Service type',
+              options: ref.watch(serviceTypesProvider),
+              value: d.serviceTypeId,
+              onRetry: () => ref.invalidate(serviceTypesProvider),
+              onChanged: (v) => ref.read(bookingDraftProvider.notifier).update((x) => x.copyWith(serviceTypeId: v)),
+            ),
+            const SizedBox(height: 12),
+            _OptionDropdown(
+              label: 'Payment mode',
+              options: ref.watch(paymentModesProvider),
+              value: d.paymentModeId,
+              onRetry: () => ref.invalidate(paymentModesProvider),
+              onChanged: (v) => ref.read(bookingDraftProvider.notifier).update((x) => x.copyWith(paymentModeId: v)),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         if (args == null)
@@ -696,7 +740,7 @@ class _ExtraCharges extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Additional charges', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+            const SectionTitle('Additional charges', icon: Icons.add_card_outlined, color: AppColors.pink),
             const SizedBox(height: 10),
             Row(
               children: [
@@ -1039,12 +1083,34 @@ class _StepHeader extends StatelessWidget {
           Expanded(
             child: Column(
               children: [
-                CircleAvatar(
-                  radius: 13,
-                  backgroundColor: i <= step ? AppColors.primary : AppColors.border,
+                Container(
+                  width: 30,
+                  height: 30,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: i == step ? brandGradient : null,
+                    color: i < step ? AppColors.success : (i > step ? AppColors.field : null),
+                    boxShadow: i == step
+                        ? [
+                            BoxShadow(
+                              color: AppColors.indigo.withValues(alpha: 0.35),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ]
+                        : null,
+                  ),
                   child: i < step
-                      ? const Icon(Icons.check, size: 15, color: Colors.white)
-                      : Text('${i + 1}', style: const TextStyle(fontSize: 12, color: Colors.white)),
+                      ? const Icon(Icons.check, size: 16, color: Colors.white)
+                      : Text(
+                          '${i + 1}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: i == step ? Colors.white : AppColors.textSecondary,
+                          ),
+                        ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -1052,7 +1118,7 @@ class _StepHeader extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: i == step ? FontWeight.w700 : FontWeight.w400,
-                    color: i == step ? AppColors.primary : AppColors.textSecondary,
+                    color: i == step ? AppColors.indigo : (i < step ? AppColors.success : AppColors.textSecondary),
                   ),
                 ),
               ],
@@ -1070,8 +1136,16 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 20, bottom: 10),
-    child: Text(text, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+    padding: const EdgeInsets.only(top: 18, bottom: 10),
+    child: Text(
+      text.toUpperCase(),
+      style: const TextStyle(
+        fontWeight: FontWeight.w700,
+        fontSize: 12,
+        letterSpacing: 0.8,
+        color: AppColors.textSecondary,
+      ),
+    ),
   );
 }
 
@@ -1198,15 +1272,48 @@ class _BusinessCustomerPicker extends ConsumerWidget {
       }
     }
 
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.business_center_outlined, color: AppColors.primary),
-        title: Text(selectedName ?? 'Business customer (optional)'),
-        subtitle: Text(selectedName == null ? 'Pick to use their address and pricing' : 'Business booking'),
-        trailing: selectedName == null
-            ? const Icon(Icons.chevron_right)
-            : IconButton(tooltip: 'Remove', icon: const Icon(Icons.close), onPressed: () => onPicked(null)),
-        onTap: pick,
+    final picked = selectedName != null;
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: picked
+              ? [AppColors.amber, AppColors.orange]
+              : [AppColors.amber.withValues(alpha: 0.14), AppColors.orange.withValues(alpha: 0.10)],
+        ),
+        border: picked ? null : Border.all(color: AppColors.amber.withValues(alpha: 0.5)),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListTile(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: picked ? Colors.white24 : AppColors.amber.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(Icons.business_center_outlined, color: picked ? Colors.white : AppColors.orange),
+          ),
+          title: Text(
+            selectedName ?? 'Business customer (optional)',
+            style: TextStyle(fontWeight: FontWeight.w700, color: picked ? Colors.white : AppColors.textPrimary),
+          ),
+          subtitle: Text(
+            picked ? 'Business booking · customer rates' : 'Pick to use their address and pricing',
+            style: TextStyle(color: picked ? Colors.white70 : AppColors.textSecondary),
+          ),
+          trailing: picked
+              ? IconButton(
+                  tooltip: 'Remove',
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () => onPicked(null),
+                )
+              : const Icon(Icons.chevron_right, color: AppColors.orange),
+          onTap: pick,
+        ),
       ),
     );
   }
@@ -1360,7 +1467,21 @@ class _ItemCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text('Package ${index + 1}', style: const TextStyle(fontWeight: FontWeight.w700)),
+              Container(
+                width: 28,
+                height: 28,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.purple.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${index + 1}',
+                  style: const TextStyle(color: AppColors.purple, fontWeight: FontWeight.w800),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text('Package ${index + 1}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
               const Spacer(),
               if (canRemove)
                 IconButton(tooltip: 'Remove package', icon: const Icon(Icons.delete_outline), onPressed: onRemove),
@@ -1528,40 +1649,22 @@ class _SummaryCard extends StatelessWidget {
   final List<(String, String)> rows;
   final VoidCallback? onEdit;
 
+  static const _look = {
+    'Destination': (Icons.place_outlined, AppColors.danger),
+    'Packages': (Icons.inventory_2_outlined, AppColors.purple),
+    'Service and payment': (Icons.tune, AppColors.indigo),
+    'Sender and receiver': (Icons.people_outline, AppColors.green),
+  };
+
   @override
-  Widget build(BuildContext context) => Card(
-    margin: const EdgeInsets.only(bottom: 12),
-    child: Padding(
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-              ),
-              if (onEdit != null) TextButton(onPressed: onEdit, child: const Text('Edit')),
-            ],
-          ),
-          for (final (label, value) in rows)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 3),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: 130,
-                    child: Text(label, style: const TextStyle(color: AppColors.textSecondary)),
-                  ),
-                  Expanded(
-                    child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    ),
-  );
+  Widget build(BuildContext context) {
+    final (icon, color) = _look[title] ?? (Icons.info_outline, AppColors.primary);
+    return SectionCard(
+      title: title,
+      icon: icon,
+      color: color,
+      trailing: onEdit == null ? null : TextButton(onPressed: onEdit, child: const Text('Edit')),
+      children: [for (final (label, value) in rows) InfoRow(label, value)],
+    );
+  }
 }

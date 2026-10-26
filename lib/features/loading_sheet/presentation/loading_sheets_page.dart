@@ -7,6 +7,7 @@ import '../../../core/format.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../../core/widgets/ui.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../masters/data/masters.dart';
 import '../data/loading_sheet_repository.dart';
@@ -97,35 +98,48 @@ class LoadingSheetTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final branches = ref.watch(branchNamesProvider).value ?? const {};
     final to = branches[sheet.deliveryBranchId]?.label ?? '–';
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap ?? () => context.push('/loading-sheets/${sheet.id}'),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(sheet.number, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-                  ),
-                  StatusBadge(sheet.status),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text('To $to', style: const TextStyle(color: AppColors.textSecondary)),
-              const SizedBox(height: 4),
-              Text(
-                '${sheet.shipmentCount} shipments · ${sheet.totalPackages} pkg · ${Fmt.kg(sheet.totalWeight)}'
-                ' · ${Fmt.dateTime(sheet.createdAt)}',
-                style: const TextStyle(fontSize: 13),
-              ),
-            ],
-          ),
+    final color = statusStyle(sheet.status).color;
+    return AccentCard(
+      color: color,
+      icon: sheet.status == 'CREATED' ? Icons.list_alt_outlined : Icons.local_shipping_outlined,
+      title: sheet.number,
+      trailing: StatusBadge(sheet.status),
+      onTap: onTap ?? () => context.push('/loading-sheets/${sheet.id}'),
+      children: [
+        Text(
+          'To $to',
+          style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
         ),
-      ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          children: [
+            _Pill('${sheet.shipmentCount} shipments', AppColors.indigo),
+            _Pill('${sheet.totalPackages} pkg', AppColors.purple),
+            _Pill(Fmt.kg(sheet.totalWeight), AppColors.teal),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(Fmt.dateTime(sheet.createdAt), style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+      ],
     );
   }
+}
+
+class _Pill extends StatelessWidget {
+  const _Pill(this.text, this.color);
+
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+    child: Text(
+      text,
+      style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w700),
+    ),
+  );
 }

@@ -10,6 +10,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/scanner_page.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../../core/widgets/ui.dart';
 import '../../auth/application/auth_controller.dart';
 import '../data/shipment_models.dart';
 import '../data/shipment_repository.dart';
@@ -191,38 +192,50 @@ class ShipmentTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = shipment;
+    final color = statusStyle(s.status).color;
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap ?? () => context.push('/shipments/${s.id}'),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(s.trackingNumber, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+              Container(width: 4, color: color),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              s.trackingNumber,
+                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                            ),
+                          ),
+                          StatusBadge(s.status),
+                          ?trailing,
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      RouteStrip(from: s.fromCity ?? '–', to: s.toCity ?? '–'),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 14,
+                        runSpacing: 4,
+                        children: [
+                          if (s.receiverName != null) _Fact(Icons.person_outline, s.receiverName!),
+                          if (s.packages != null) _Fact(Icons.inventory_2_outlined, '${s.packages} pkg'),
+                          if (s.chargeableWeight != null) _Fact(Icons.scale_outlined, Fmt.kg(s.chargeableWeight)),
+                          _Fact(Icons.event_outlined, Fmt.date(s.bookingDate ?? s.createdDate)),
+                        ],
+                      ),
+                    ],
                   ),
-                  StatusBadge(s.status),
-                  ?trailing,
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${s.fromCity ?? '–'}  →  ${s.toCity ?? '–'}',
-                style: const TextStyle(color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                [
-                  s.receiverName,
-                  if (s.packages != null) '${s.packages} pkg',
-                  Fmt.kg(s.chargeableWeight),
-                  Fmt.date(s.bookingDate ?? s.createdDate),
-                ].nonNulls.join(' · '),
-                style: const TextStyle(fontSize: 13),
+                ),
               ),
             ],
           ),
@@ -230,4 +243,21 @@ class ShipmentTile extends StatelessWidget {
       ),
     );
   }
+}
+
+class _Fact extends StatelessWidget {
+  const _Fact(this.icon, this.text);
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, size: 15, color: AppColors.textSecondary),
+      const SizedBox(width: 4),
+      Text(text, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+    ],
+  );
 }

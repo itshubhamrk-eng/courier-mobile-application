@@ -8,6 +8,7 @@ import '../../core/network/api_client.dart';
 import '../../core/theme/app_theme.dart';
 import '../auth/application/auth_controller.dart';
 import '../masters/data/masters.dart';
+import '../../core/widgets/ui.dart';
 
 /// Branch wallet (`GET /api/v1/branch-wallet`: the caller's own branch).
 class BranchWallet {
@@ -49,6 +50,7 @@ class BranchHeader extends ConsumerWidget implements PreferredSizeWidget {
     final session = ref.watch(sessionProvider);
     final branch = (ref.watch(branchNamesProvider).value ?? const {})[session?.operatingBranchId];
     return AppBar(
+      flexibleSpace: const AppBarGradient(),
       toolbarHeight: kToolbarHeight + 4,
       titleSpacing: 0,
       leading: Builder(
@@ -190,7 +192,10 @@ class CompanyLogo extends ConsumerWidget {
 
 /// White section bar for a tab's own title (and tabs) under the branch header.
 PreferredSizeWidget sectionBar(String title, {List<Widget>? actions, PreferredSizeWidget? bottom}) => AppBar(
-  title: Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+  title: Text(
+    title,
+    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.indigo),
+  ),
   automaticallyImplyLeading: false,
   backgroundColor: AppColors.surface,
   foregroundColor: AppColors.textPrimary,
@@ -204,8 +209,10 @@ PreferredSizeWidget sectionBar(String title, {List<Widget>? actions, PreferredSi
 
 /// Tab bar coloured for [sectionBar].
 TabBar sectionTabs(List<Widget> tabs) => TabBar(
-  labelColor: AppColors.primary,
+  labelColor: AppColors.indigo,
   unselectedLabelColor: AppColors.textSecondary,
-  indicatorColor: AppColors.primary,
+  indicatorColor: AppColors.indigo,
+  indicatorWeight: 3,
+  labelStyle: const TextStyle(fontWeight: FontWeight.w700),
   tabs: tabs,
 );
