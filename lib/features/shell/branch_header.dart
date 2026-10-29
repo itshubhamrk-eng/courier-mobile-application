@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../core/config/env.dart';
@@ -9,6 +10,7 @@ import '../../core/theme/app_theme.dart';
 import '../auth/application/auth_controller.dart';
 import '../masters/data/masters.dart';
 import '../../core/widgets/ui.dart';
+import '../wallet/application/wallet_state.dart';
 
 /// Branch wallet (`GET /api/v1/branch-wallet`: the caller's own branch).
 class BranchWallet {
@@ -100,10 +102,13 @@ class WalletChip extends ConsumerWidget {
     final wallet = ref.watch(branchWalletProvider);
     return switch (wallet) {
       AsyncData(value: final w?) => Tooltip(
-        message: 'Branch wallet: available balance',
+        message: 'Branch wallet: tap to open',
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: () => ref.invalidate(branchWalletProvider),
+          onTap: () {
+            ref.invalidate(branchWalletProvider);
+            if (ref.read(walletAccessProvider).view) context.push('/wallet');
+          },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(

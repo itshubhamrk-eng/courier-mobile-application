@@ -8,6 +8,7 @@ import 'package:branch_ops/core/storage/secure_store.dart';
 import 'package:branch_ops/features/auth/application/auth_controller.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -83,6 +84,7 @@ Map<String, dynamic> loginJson({
   int expiresIn = 900,
   String? branchId = 'branch-1',
   List<String> permissions = const ['DASHBOARD_READ', 'SHIPMENT_CREATE', 'SHIPMENT_READ'],
+  List<String> roles = const ['BOOKING_OPERATOR'],
 }) => {
   'accessToken': access,
   'refreshToken': refresh,
@@ -93,7 +95,7 @@ Map<String, dynamic> loginJson({
   'companyId': 'company-1',
   'email': 'clerk@example.test',
   'displayName': 'Test Clerk',
-  'roles': ['BOOKING_OPERATOR'],
+  'roles': roles,
   'permissions': permissions,
   'branchId': branchId,
   'hubId': null,
@@ -144,13 +146,15 @@ Future<ProviderContainer> pumpSignedInApp(
     'MANIFEST_DISPATCH',
   ],
   String branchId = 'branch-1',
+  List<String> roles = const ['BOOKING_OPERATOR'],
+  List<Override> overrides = const [],
 }) async {
   tester.view.physicalSize = const Size(400, 900);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final adapter = FakeAdapter((r) async {
     if (r.path == '/api/v1/auth/refresh') {
-      return (status: 200, body: ok(loginJson(permissions: permissions, branchId: branchId)));
+      return (status: 200, body: ok(loginJson(permissions: permissions, branchId: branchId, roles: roles)));
     }
     return handler(r);
   });
@@ -167,6 +171,7 @@ Future<ProviderContainer> pumpSignedInApp(
           return d;
         }),
         tokenSourceProvider.overrideWith((ref) => ref.watch(authControllerProvider.notifier)),
+        ...overrides,
       ],
       child: const BranchOpsApp(),
     ),

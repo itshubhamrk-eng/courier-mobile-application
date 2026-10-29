@@ -23,6 +23,18 @@ import '../theme/app_theme.dart';
   'RESOLVED' => (label: 'Exception Resolved', color: AppColors.success),
   'CREATED' => (label: 'Created', color: AppColors.info),
   'COMPLETED' => (label: 'Completed', color: AppColors.success),
+  // Wallet: recharge attempts, top-up requests, wallet state, bank settlement.
+  'PENDING' => (label: 'Pending', color: AppColors.warning),
+  'SUCCESS' => (label: 'Success', color: AppColors.success),
+  'FAILED' => (label: 'Failed', color: AppColors.danger),
+  'APPROVED' => (label: 'Approved', color: AppColors.success),
+  'REJECTED' => (label: 'Rejected', color: AppColors.danger),
+  'ACTIVE' => (label: 'Active', color: AppColors.success),
+  'INACTIVE' => (label: 'Inactive', color: AppColors.neutral),
+  'SUSPENDED' => (label: 'Suspended', color: AppColors.warning),
+  'CLOSED' => (label: 'Closed', color: AppColors.neutral),
+  'AWAITING' => (label: 'Awaiting settlement', color: AppColors.warning),
+  'SETTLED' => (label: 'Settled to bank', color: AppColors.success),
   _ => (label: status, color: AppColors.neutral),
 };
 

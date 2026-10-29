@@ -14,7 +14,7 @@ privacy policy page; if the app starts using new data or permissions, update all
 | Privacy policy | https://www.occplsoftech.com/privacy/courier-pro |
 | Delete account URL | https://www.occplsoftech.com/courier-pro/delete-account |
 | Category | Business |
-| Free / paid | Free, no in-app purchases, no ads |
+| Free / paid | Free, no Play in-app purchases, no ads (branch wallet recharge is paid to the courier company through Razorpay, see section 8) |
 
 The two policy pages ship with the softech-website repo (`src/app/pages/legal/courier-pro-*.ts`).
 They must be live before you submit.
@@ -108,10 +108,12 @@ for us (hosting, file storage) are not "sharing" either.
 | Photos and videos: Photos | Yes | No | Optional | App functionality (proof-of-delivery photos) |
 | Files and docs | Yes | No | Optional | App functionality (shipment documents, signature image) |
 | App info and performance: Diagnostics | Yes | No | Required | Analytics (Google ML Kit, see below) |
-| Device or other IDs | Yes | No | Required | App functionality, Fraud prevention, security and compliance (installation ID for the signed-in device list) |
+| Device or other IDs | Yes | No | Required | App functionality, Fraud prevention, security and compliance (installation ID for the signed-in device list; device details the Razorpay SDK uses for payment fraud checks) |
+| Financial info: User payment info | Yes | No | Optional | App functionality (wallet recharge), Fraud prevention, security and compliance |
+| Financial info: Purchase history | Yes | No | Optional | App functionality (wallet recharges, ledger, receipts) |
 
-Not collected: location, financial info, health, messages, contacts, calendar, audio, web
-browsing, app activity, advertising ID.
+Not collected: location, credit score, other financial info, health, messages, contacts,
+calendar, audio, web browsing, app activity, advertising ID.
 
 Collection is not "ephemeral" for any of these: they are stored on the server.
 
@@ -122,6 +124,12 @@ Notes:
   the ML Kit library may send Google device and performance diagnostics, which is why
   Diagnostics is declared.
 - There is no analytics, crash reporting or ads SDK in the app.
+- Wallet recharge uses Razorpay Standard Checkout (`razorpay_flutter`). Card, UPI, net banking
+  and wallet details are entered in Razorpay's checkout and go to Razorpay, the payment
+  processor acting for the courier company; the app and our servers never see or store them.
+  Our servers keep the recharge amount, Razorpay order / payment IDs and status, and the wallet
+  ledger. A payment processor acting on our behalf is a service provider, so this is
+  "collected", not "shared". User payment info is optional: only staff who recharge enter it.
 
 ## 7. Permissions
 
@@ -132,13 +140,22 @@ From the merged release manifest (`aapt2 dump permissions`):
 | `CAMERA` | Scan shipment barcodes / QR codes; take proof-of-delivery photos. Requested only when the scanner or camera opens. |
 | `INTERNET` | Talk to the courier server. |
 | `ACCESS_NETWORK_STATE` | Show the offline banner and avoid sending while offline. |
+| `NFC` | Added by the Razorpay SDK: tap-to-pay cards in checkout. Normal permission, no prompt. |
+| `READ_BASIC_PHONE_STATE` | Added by the Razorpay SDK (Android 13+): basic device / SIM state for UPI payment flows. Normal permission, no prompt; it cannot read the phone number or call log. |
 
 Gallery picks use the Android photo picker, so there is no storage or media permission.
-No location, contacts, SMS, phone or background permissions.
+No location, contacts, SMS, call log or background permissions.
 
 ## 8. Government apps, financial features, health
 
-All No. The app records charges and wallet balance for the courier company but moves no money.
+- Government apps, health: No.
+- Financial features declaration: choose **"My app doesn't provide any financial features"**. The app
+  is not a payment service, wallet, bank or lender for its users: branch staff prepay their own
+  courier company (the app's operator) for courier services, through Razorpay. Check this with your
+  own reading of the current declaration wording before submitting.
+- Play Billing: not required. The wallet pays for physical courier services, not digital goods or
+  app features, which Google Play's payments policy lets apps charge for with another processor.
+- Content rating "Digital purchases": No, for the same reason.
 
 ## 9. Store listing
 

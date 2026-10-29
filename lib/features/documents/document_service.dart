@@ -15,6 +15,7 @@ import '../shipments/data/shipment_models.dart';
 import '../shipments/data/shipment_repository.dart';
 import '../thc/data/thc_repository.dart';
 import 'pdf_documents.dart';
+import '../wallet/data/wallet_models.dart';
 
 final documentServiceProvider = Provider<DocumentService>((ref) => DocumentService(ref));
 
@@ -84,6 +85,27 @@ class DocumentService {
     final m = modes.where((x) => x.id == modeId).firstOrNull;
     return m != null && (m.flags['collectAtDelivery'] == true || m.flags['cashOnDelivery'] == true) ? net : null;
   }
+
+  /// Receipt for one wallet ledger entry (same fields as the web receipt).
+  Future<Uint8List> walletReceipt(WalletTxn t, {String? walletNumber, String? branchName}) async => buildWalletReceipt(
+    theme: await _pdfTheme(),
+    letterhead: await _letterhead(),
+    transactionNo: t.transactionNo,
+    credit: t.isCredit,
+    amount: t.amount,
+    reason: t.reason,
+    rows: [
+      ('Receipt / Transaction No', t.transactionNo),
+      ('Date & Time', Fmt.dateTime(t.createdAt)),
+      ('Wallet', [?walletNumber, ?(branchName ?? t.branchName)].join(' · ')),
+      ('Type', t.typeLabel ?? (t.isCredit ? 'Credit' : 'Debit')),
+      ('Reason', t.reason),
+      ('Payment Reference', t.paymentReference ?? '—'),
+      ('Reference', t.referenceId ?? '—'),
+      ('Balance After', Fmt.money(t.balanceAfter)),
+      ('Created By', t.createdByName ?? '—'),
+    ],
+  );
 
   Future<Uint8List> label(String shipmentId) async {
     final s = await _ref.read(shipmentRepositoryProvider).byId(shipmentId);

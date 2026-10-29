@@ -126,7 +126,11 @@ void main() {
       expect(body['numberOfPackages'], 5, reason: 'typed count ignored');
       expect(body['invoiceValue'], 4000, reason: 'typed invoice value ignored');
       expect(d.ewayBillNeeded(4000), isTrue);
-      expect(_ready.copyWith(invoiceValue: 700).toCreateRequest('b')['invoiceValue'], 700, reason: 'one package: typed');
+      expect(
+        _ready.copyWith(invoiceValue: 700).toCreateRequest('b')['invoiceValue'],
+        700,
+        reason: 'one package: typed',
+      );
     });
 
     test('adds the E-Way Bill block once an invoice number is entered', () {
@@ -314,7 +318,7 @@ void main() {
       final body = creates.single.data as Map<String, dynamic>;
       expect(body['destinationAreaId'], 'area-1', reason: 'primary area picked by default');
       expect(find.text('AWB123'), findsOneWidget);
-      expect(find.text('₹531.50'), findsOneWidget);
+      expect(find.textContaining('₹531.50'), findsOneWidget);
       expect(container.read(bookingDraftProvider).senderName, isEmpty, reason: 'draft cleared after booking');
     });
 
