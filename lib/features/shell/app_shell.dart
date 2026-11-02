@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import 'app_drawer.dart';
 import 'branch_header.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/widgets/ui.dart';
 
 /// Main screens: branch header on top, side menu on the left (like the web app),
@@ -16,6 +17,7 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
     appBar: const BranchHeader(),
     drawer: const AppDrawer(),
+    drawerScrimColor: AppColors.scrim,
     body: shell,
     bottomNavigationBar: NavigationBar(
       selectedIndex: shell.currentIndex,

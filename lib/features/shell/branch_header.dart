@@ -1,4 +1,7 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -9,7 +12,6 @@ import '../../core/network/api_client.dart';
 import '../../core/theme/app_theme.dart';
 import '../auth/application/auth_controller.dart';
 import '../masters/data/masters.dart';
-import '../../core/widgets/ui.dart';
 import '../wallet/application/wallet_state.dart';
 
 /// Branch wallet (`GET /api/v1/branch-wallet`: the caller's own branch).
@@ -39,56 +41,93 @@ final branchWalletProvider = FutureProvider<BranchWallet?>((ref) async {
       );
 });
 
-/// Top header on the main screens, like the web app's: menu, company logo and
-/// name, branch name, wallet balance.
+/// Top bar on the main screens: a rounded glass bar with a crimson bottom line, so it
+/// reads as one system with the crimson side menu. Menu button, company logo and name,
+/// branch, wallet balance.
 class BranchHeader extends ConsumerWidget implements PreferredSizeWidget {
   const BranchHeader({super.key});
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight + 4);
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight + 16);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionProvider);
     final branch = (ref.watch(branchNamesProvider).value ?? const {})[session?.operatingBranchId];
-    return AppBar(
-      flexibleSpace: const AppBarGradient(),
-      toolbarHeight: kToolbarHeight + 4,
-      titleSpacing: 0,
-      leading: Builder(
-        builder: (context) => IconButton(
-          tooltip: 'Menu',
-          icon: const Icon(Icons.menu),
-          onPressed: () => Scaffold.of(context).openDrawer(),
-        ),
-      ),
-      title: Row(
-        children: [
-          CompanyLogo(name: session?.companyName ?? '', url: session?.companyLogo, size: 34),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  session?.companyName ?? 'Courier Pro',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(22),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+              child: Container(
+                height: kToolbarHeight + 4,
+                decoration: BoxDecoration(
+                  color: AppColors.glass,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: AppColors.border),
                 ),
-                Text(
-                  branch?.label ?? 'Your branch',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: Colors.white70),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: Container(height: 3, color: AppColors.sidebarPillFg),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 10, bottom: 3),
+                      child: Row(
+                        children: [
+                          Builder(
+                            builder: (context) => IconButton(
+                              tooltip: 'Menu',
+                              color: AppColors.textPrimary,
+                              icon: const Icon(Icons.menu),
+                              onPressed: () => Scaffold.of(context).openDrawer(),
+                            ),
+                          ),
+                          CompanyLogo(name: session?.companyName ?? '', url: session?.companyLogo, size: 34),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  session?.companyName ?? 'Courier Pro',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                Text(
+                                  branch?.label ?? 'Your branch',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const WalletChip(),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ],
+        ),
       ),
-      actions: const [Padding(padding: EdgeInsets.only(right: 10), child: WalletChip())],
     );
   }
 }
@@ -112,18 +151,18 @@ class WalletChip extends ConsumerWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.16),
+              color: AppColors.sidebarPillFg.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.account_balance_wallet_outlined, size: 16, color: Colors.white),
+                const Icon(Icons.account_balance_wallet_outlined, size: 16, color: AppColors.sidebarPillFg),
                 const SizedBox(width: 6),
                 Text(
                   Fmt.money(w.available),
                   style: TextStyle(
-                    color: w.available < 0 ? const Color(0xFFFFCDD2) : Colors.white,
+                    color: w.available < 0 ? AppColors.danger : AppColors.sidebarPillFg,
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
                   ),
@@ -136,7 +175,7 @@ class WalletChip extends ConsumerWidget {
       AsyncLoading() => const SizedBox(
         width: 18,
         height: 18,
-        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.sidebarPillFg),
       ),
       _ => const SizedBox.shrink(),
     };
