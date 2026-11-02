@@ -33,6 +33,26 @@ class AppColors {
   static const cyan = Color(0xFF0288D1);
   static const pink = Color(0xFFD81B60);
   static const green = Color(0xFF2E7D32);
+
+  // Side menu: floating crimson panel. Labels are full white because 88% white fails
+  // AA on the light top of the gradient; pressed/hover darkens for the same reason.
+  static const sidebarText = Colors.white;
+  static const sidebarPillBg = Colors.white;
+  static const sidebarPillFg = Color(0xFFB3123A);
+  static const sidebarPressed = Color(0x24000000); // black 14%
+  static const sidebarInset = Color(0x24000000);
+  static const sidebarPillShadow = Color(0x2E000000); // black 18%
+  static const sidebarShadow = Color(0x1F4338CA); // indigo 12%
+  static const focusRing = Color(0xFF4338CA);
+  static const glass = Color(0xB8FFFFFF); // white 72%
+  static const scrim = Color(0x73141428); // rgb(20 20 40 / 45%)
+  static const sidebarGradient = LinearGradient(
+    // 170deg: top to bottom, leaning slightly left to right.
+    begin: Alignment(-0.18, -1),
+    end: Alignment(0.18, 1),
+    colors: [Color(0xFFE02550), Color(0xFFB3123A), Color(0xFF7A0E33)],
+    stops: [0, 0.55, 1],
+  );
 }
 
 class AppTheme {

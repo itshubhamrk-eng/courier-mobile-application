@@ -6,7 +6,6 @@ import '../../core/auth/permissions.dart';
 import '../../core/format.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/state_views.dart';
-import '../../core/widgets/ui.dart';
 import '../auth/application/auth_controller.dart';
 import '../masters/data/masters.dart';
 import 'branch_header.dart';
@@ -83,7 +82,9 @@ const _operations = [
   ),
 ];
 
-/// Left side menu, like the web app's sidebar.
+/// Left side menu: a floating crimson panel 12px off the screen edges, like the web
+/// portal's sidebar. Brand on top, the menu (scrolls inside the panel), and the
+/// signed-in user, wallet and Sign out pinned at the bottom.
 class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
 
@@ -95,240 +96,330 @@ class AppDrawer extends ConsumerWidget {
     final location = GoRouterState.of(context).matchedLocation;
     bool can(String? p) => p == null || (session?.can(p) ?? false);
     final walletAccess = ref.watch(walletAccessProvider);
+    final screen = MediaQuery.sizeOf(context).width;
+    final panelWidth = (screen * 0.84).clamp(0.0, 288.0);
 
-    void open(_Item item) {
+    void go(String route, {bool tab = false}) {
       Navigator.of(context).pop();
-      item.tab ? context.go(item.route) : context.push(item.route);
+      tab ? context.go(route) : context.push(route);
     }
 
+    final finance = [
+      ('Branch Wallet', Icons.account_balance_wallet_outlined, '/wallet'),
+      if (walletAccess.recharge) ('Recharge Wallet', Icons.add_card, '/wallet/recharge'),
+      ('Wallet Transactions', Icons.receipt_long_outlined, '/wallet/transactions'),
+      ('Top-up Requests', Icons.fact_check_outlined, '/wallet/topup-requests'),
+      if (walletAccess.rechargeReport) ('Recharge Report', Icons.assessment_outlined, '/wallet/recharge-report'),
+    ];
+
     return Drawer(
-      backgroundColor: AppColors.surface,
-      child: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.fromLTRB(16, MediaQuery.paddingOf(context).top + 14, 16, 16),
-            decoration: const BoxDecoration(gradient: brandGradient),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    CompanyLogo(name: session?.companyName ?? '', url: session?.companyLogo, size: 30),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        session?.companyName ?? 'Courier Pro',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white54, width: 3),
-                      ),
-                      child: Text(
-                        _initials(session?.displayName ?? ''),
-                        style: const TextStyle(color: AppColors.indigo, fontSize: 20, fontWeight: FontWeight.w800),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            session?.displayName ?? '',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+      width: panelWidth + 12,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      shape: const RoundedRectangleBorder(),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 0, 12),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: AppColors.sidebarGradient,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: const [BoxShadow(color: AppColors.sidebarShadow, blurRadius: 40, offset: Offset(0, 10))],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 20, 14, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _Brand(name: session?.companyName ?? 'Courier Pro', logoUrl: session?.companyLogo),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: ListView(
+                      padding: EdgeInsets.zero,
+                      children: [
+                        _Pill(
+                          title: 'Dashboard',
+                          icon: Icons.dashboard_outlined,
+                          active: location == '/home',
+                          onTap: () => go('/home', tab: true),
+                        ),
+                        const _Heading('Operations'),
+                        for (final item in _operations.where((i) => can(i.permission)))
+                          _Pill(
+                            title: item.title,
+                            icon: item.icon,
+                            active: item.tab && location == item.route && item.title != 'In Scan',
+                            onTap: () => go(item.route, tab: item.tab),
                           ),
-                          if (session != null && session.roles.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Wrap(
-                              spacing: 4,
-                              runSpacing: 4,
-                              children: [
-                                for (final r in session.roles.take(2))
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white24,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Text(
-                                      _roleLabel(r),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ],
+                        if (walletAccess.view) ...[
+                          const _Heading('Finance'),
+                          for (final (title, icon, route) in finance)
+                            _Pill(title: title, icon: icon, active: location == route, onTap: () => go(route)),
                         ],
-                      ),
+                      ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                if (branch?.label case final b?) _HeaderLine(Icons.store_outlined, b),
-                if (session?.email case final e? when e.isNotEmpty) _HeaderLine(Icons.mail_outline, e),
-                if (wallet != null) ...[
+                  ),
                   const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
+                  _UserCard(
+                    name: session?.displayName ?? '',
+                    role: session?.roles.map(_roleLabel).firstOrNull,
+                    branch: branch?.label,
+                    email: session?.email,
+                    wallet: wallet == null ? null : Fmt.money(wallet.available),
+                  ),
+                  const SizedBox(height: 6),
+                  _Pill(
+                    title: 'Sign out',
+                    icon: Icons.logout,
+                    onTap: () async {
+                      final ok = await confirmAction(
+                        context,
+                        title: 'Sign out?',
+                        message: 'You will need your password to sign in again.',
+                        confirmLabel: 'Sign out',
+                      );
+                      if (ok) await ref.read(authControllerProvider.notifier).logout();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Company logo on a white square (10px corners), or initials on a white circle.
+class _Brand extends StatelessWidget {
+  const _Brand({required this.name, this.logoUrl});
+
+  final String name;
+  final String? logoUrl;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 4),
+    child: Row(
+      children: [
+        if (logoUrl != null && logoUrl!.isNotEmpty)
+          Container(
+            width: 38,
+            height: 38,
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(color: AppColors.sidebarPillBg, borderRadius: BorderRadius.circular(10)),
+            child: CompanyLogo(name: name, url: logoUrl, size: 32),
+          )
+        else
+          Container(
+            width: 38,
+            height: 38,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(color: AppColors.sidebarPillBg, shape: BoxShape.circle),
+            child: Text(
+              _initials(name),
+              style: const TextStyle(color: AppColors.sidebarPillFg, fontWeight: FontWeight.w800, fontSize: 15),
+            ),
+          ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: AppColors.sidebarText, fontSize: 17, fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _Heading extends StatelessWidget {
+  const _Heading(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
+    child: Text(
+      text.toUpperCase(),
+      style: const TextStyle(
+        color: AppColors.sidebarText,
+        fontSize: 11.5,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 11.5 * 0.12,
+      ),
+    ),
+  );
+}
+
+/// One menu item: a full-width pill. The active item is the only solid white pill.
+class _Pill extends StatefulWidget {
+  const _Pill({required this.title, required this.icon, required this.onTap, this.active = false});
+
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool active;
+
+  @override
+  State<_Pill> createState() => _PillState();
+}
+
+class _PillState extends State<_Pill> {
+  bool _focused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = widget.active ? AppColors.sidebarPillFg : AppColors.sidebarText;
+    final pill = StadiumBorder();
+    return Padding(
+      padding: EdgeInsets.zero,
+      child: DecoratedBox(
+        // Visible keyboard focus: 2px indigo ring, 2px outside the pill.
+        decoration: ShapeDecoration(
+          shape: StadiumBorder(side: BorderSide(color: _focused ? AppColors.focusRing : Colors.transparent, width: 2)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(2),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              boxShadow: widget.active
+                  ? const [BoxShadow(color: AppColors.sidebarPillShadow, blurRadius: 14, offset: Offset(0, 4))]
+                  : null,
+            ),
+            child: Material(
+              color: widget.active ? AppColors.sidebarPillBg : Colors.transparent,
+              shape: pill,
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                customBorder: pill,
+                onTap: widget.onTap,
+                onFocusChange: (f) => setState(() => _focused = f),
+                hoverColor: widget.active ? null : AppColors.sidebarPressed,
+                highlightColor: widget.active ? null : AppColors.sidebarPressed,
+                splashColor: widget.active ? null : AppColors.sidebarPressed,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 44),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
                     child: Row(
                       children: [
-                        const IconBadge(Icons.account_balance_wallet_outlined, color: AppColors.green, size: 34),
-                        const SizedBox(width: 10),
-                        const Expanded(
-                          child: Text('Wallet balance', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-                        ),
-                        Text(
-                          Fmt.money(wallet.available),
-                          style: const TextStyle(color: AppColors.green, fontWeight: FontWeight.w800, fontSize: 16),
+                        Icon(widget.icon, size: 20, color: fg),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            widget.title,
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: fg, fontSize: 15, fontWeight: FontWeight.w600),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              children: [
-                _tile(
-                  context,
-                  'Dashboard',
-                  Icons.dashboard_outlined,
-                  badge: AppColors.indigo,
-                  selected: location == '/home',
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    context.go('/home');
-                  },
                 ),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(20, 14, 16, 6),
-                  child: Text(
-                    'OPERATIONS',
-                    style: TextStyle(
-                      fontSize: 11,
-                      letterSpacing: 0.8,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-                for (final item in _operations.where((i) => can(i.permission)))
-                  _tile(
-                    context,
-                    item.title,
-                    item.icon,
-                    badge: item.color,
-                    selected: item.tab && location == item.route && item.title != 'In Scan',
-                    onTap: () => open(item),
-                  ),
-                if (walletAccess.view) ...[
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(20, 14, 16, 6),
-                    child: Text(
-                      'FINANCE',
-                      style: TextStyle(
-                        fontSize: 11,
-                        letterSpacing: 0.8,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-                  for (final (title, icon, color, route) in [
-                    ('Branch Wallet', Icons.account_balance_wallet_outlined, AppColors.green, '/wallet'),
-                    if (walletAccess.recharge) ('Recharge Wallet', Icons.add_card, AppColors.teal, '/wallet/recharge'),
-                    ('Wallet Transactions', Icons.receipt_long_outlined, AppColors.purple, '/wallet/transactions'),
-                    ('Top-up Requests', Icons.fact_check_outlined, AppColors.indigo, '/wallet/topup-requests'),
-                    if (walletAccess.rechargeReport)
-                      ('Recharge Report', Icons.assessment_outlined, AppColors.orange, '/wallet/recharge-report'),
-                  ])
-                    _tile(
-                      context,
-                      title,
-                      icon,
-                      badge: color,
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        context.push(route);
-                      },
-                    ),
-                ],
-              ],
+              ),
             ),
           ),
-          const Divider(height: 1),
-          SafeArea(
-            top: false,
-            child: _tile(
-              context,
-              'Sign out',
-              Icons.logout,
-              color: AppColors.danger,
-              onTap: () async {
-                final ok = await confirmAction(
-                  context,
-                  title: 'Sign out?',
-                  message: 'You will need your password to sign in again.',
-                  confirmLabel: 'Sign out',
-                );
-                if (ok) await ref.read(authControllerProvider.notifier).logout();
-              },
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
+}
 
-  Widget _tile(
-    BuildContext context,
-    String title,
-    IconData icon, {
-    required VoidCallback onTap,
-    bool selected = false,
-    Color? color,
-    Color? badge,
-  }) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 8),
-    child: ListTile(
-      dense: true,
-      selected: selected,
-      selectedTileColor: AppColors.primaryLight,
-      selectedColor: AppColors.primary,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      leading: badge != null
-          ? IconBadge(icon, color: badge, size: 34)
-          : Icon(icon, color: color ?? (selected ? AppColors.primary : AppColors.textSecondary)),
-      title: Text(
-        title,
-        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: color),
-      ),
-      onTap: onTap,
+/// Signed-in user, branch and wallet, pinned above Sign out.
+class _UserCard extends StatelessWidget {
+  const _UserCard({required this.name, this.role, this.branch, this.email, this.wallet});
+
+  final String name;
+  final String? role;
+  final String? branch;
+  final String? email;
+  final String? wallet;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(color: AppColors.sidebarInset, borderRadius: BorderRadius.circular(20)),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(color: AppColors.sidebarPillBg, shape: BoxShape.circle),
+              child: Text(
+                _initials(name),
+                style: const TextStyle(color: AppColors.sidebarPillFg, fontWeight: FontWeight.w800, fontSize: 14),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: AppColors.sidebarText, fontWeight: FontWeight.w700, fontSize: 15),
+                  ),
+                  if (role != null)
+                    Text(
+                      role!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: AppColors.sidebarText, fontSize: 12),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (branch != null) _Line(Icons.store_outlined, branch!),
+        if (email != null && email!.isNotEmpty) _Line(Icons.mail_outline, email!),
+        if (wallet != null) _Line(Icons.account_balance_wallet_outlined, 'Wallet $wallet', bold: true),
+      ],
+    ),
+  );
+}
+
+class _Line extends StatelessWidget {
+  const _Line(this.icon, this.text, {this.bold = false});
+
+  final IconData icon;
+  final String text;
+  final bool bold;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 6),
+    child: Row(
+      children: [
+        Icon(icon, size: 16, color: AppColors.sidebarText),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: AppColors.sidebarText,
+              fontSize: 13,
+              fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
     ),
   );
 }
@@ -342,29 +433,3 @@ String _initials(String name) {
 /// BRANCH_MANAGER -> Branch Manager.
 String _roleLabel(String role) =>
     role.split('_').where((w) => w.isNotEmpty).map((w) => w[0] + w.substring(1).toLowerCase()).join(' ');
-
-class _HeaderLine extends StatelessWidget {
-  const _HeaderLine(this.icon, this.text);
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 4),
-    child: Row(
-      children: [
-        Icon(icon, size: 16, color: Colors.white70),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Colors.white, fontSize: 13),
-          ),
-        ),
-      ],
-    ),
-  );
-}
