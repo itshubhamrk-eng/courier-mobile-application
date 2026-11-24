@@ -76,7 +76,7 @@ Future<DeliveryAttempt?> recordFailedDelivery(
       );
       return null;
     }
-    showSubmitFailure(context, e, title: 'Attempt not recorded');
+    showSubmitFailure(context, e, title: 'Attempt not recorded', scene: ResultScene.delivery);
     return null;
   }
 }

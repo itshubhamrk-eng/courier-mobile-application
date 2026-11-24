@@ -22,16 +22,17 @@ import '../data/package_tally.dart';
 import '../data/quick_scan_repository.dart';
 
 enum QuickScanMode {
-  inScan('In-scan', 'DISPATCHED', Icons.move_to_inbox_outlined),
-  outScan('Out-scan', 'MANIFEST_CREATED', Icons.outbox_outlined);
+  inScan('In-scan', 'DISPATCHED', Icons.move_to_inbox_outlined, ResultScene.inScan),
+  outScan('Out-scan', 'MANIFEST_CREATED', Icons.outbox_outlined, ResultScene.outScan);
 
-  const QuickScanMode(this.label, this.requiredStatus, this.icon);
+  const QuickScanMode(this.label, this.requiredStatus, this.icon, this.scene);
 
   final String label;
 
   /// The only status the server accepts this scan from.
   final String requiredStatus;
   final IconData icon;
+  final ResultScene scene;
 }
 
 /// Scan one shipment in (or out at a hub) package by package. Scanning a label opens
@@ -221,7 +222,7 @@ class _QuickScanPageState extends ConsumerState<QuickScanPage> {
       }
       ref.invalidate(dashboardCountsProvider);
     } on ApiException catch (e) {
-      if (mounted) showSubmitFailure(context, e, title: '${_mode.label} failed');
+      if (mounted) showSubmitFailure(context, e, title: '${_mode.label} failed', scene: _mode.scene);
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -456,7 +457,7 @@ class _QuickScanPageState extends ConsumerState<QuickScanPage> {
         child: Column(
           children: [
             const SizedBox(height: 18),
-            ResultMark(d.short ? ResultKind.warning : ResultKind.success, size: 64, onDark: true),
+            ResultSceneView(_mode.scene, d.short ? ResultKind.warning : ResultKind.success, onDark: true),
             const SizedBox(height: 22),
             Text(
               d.short ? '${_mode.label} done, short' : '${_mode.label} done',

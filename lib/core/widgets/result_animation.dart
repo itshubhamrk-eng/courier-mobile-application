@@ -179,29 +179,162 @@ class _MarkPainter extends CustomPainter {
   bool shouldRepaint(_MarkPainter old) => old.t != t || old.kind != kind || old.onDark != onDark;
 }
 
+/// What is being done, for submits that move a shipment.
+enum ResultScene {
+  /// Box travels into the warehouse.
+  inScan(null, Icons.inventory_2, Icons.warehouse),
+
+  /// Truck leaves the warehouse.
+  outScan(Icons.warehouse, Icons.local_shipping, null),
+
+  /// Rider reaches the customer's home.
+  delivery(null, Icons.delivery_dining, Icons.home);
+
+  const ResultScene(this.start, this.mover, this.end);
+
+  final IconData? start;
+  final IconData mover;
+  final IconData? end;
+}
+
+/// Plays [scene] along a road, then the [ResultMark]. On failure the mover stops short
+/// of where it was going, so the picture itself says the job did not complete.
+class ResultSceneView extends StatefulWidget {
+  const ResultSceneView(this.scene, this.kind, {super.key, this.onDark = false});
+
+  final ResultScene scene;
+  final ResultKind kind;
+  final bool onDark;
+
+  @override
+  State<ResultSceneView> createState() => _ResultSceneViewState();
+}
+
+class _ResultSceneViewState extends State<ResultSceneView> with SingleTickerProviderStateMixin {
+  late final _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100));
+  bool _started = false;
+
+  static const _width = 240.0;
+  static const _icon = 56.0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+    MediaQuery.disableAnimationsOf(context) ? _c.value = 1 : _c.forward();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final failed = widget.kind == ResultKind.failure;
+    final scene = widget.scene;
+    final place = widget.onDark ? Colors.white70 : AppColors.indigo;
+    final mover = widget.onDark ? Colors.white : AppColors.orange;
+    final road = widget.onDark ? Colors.white38 : AppColors.border;
+    Widget still(IconData i, double left) => Positioned(
+      left: left,
+      top: 0,
+      child: Icon(i, size: _icon, color: place),
+    );
+    return ExcludeSemantics(
+      child: Center(
+        child: SizedBox(
+          width: _width,
+          child: AnimatedBuilder(
+            animation: _c,
+            builder: (context, _) {
+              final t = Curves.easeInOut.transform(_c.value);
+              const span = _width - _icon;
+              final x = failed ? span * 0.42 * t : span * t;
+              // The box disappears into the warehouse; the rider stops at the door.
+              final enters = scene == ResultScene.inScan && !failed;
+              final arrive = scene == ResultScene.delivery && !failed ? x - 46 * t : x;
+              final fade = enters ? (1 - (t - 0.8) / 0.2).clamp(0.0, 1.0) : 1.0;
+              final bob = math.sin(_c.value * math.pi * 10) * 2 * (1 - t);
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    height: _icon + 6,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 4,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              for (var i = 0; i < 12; i++)
+                                Container(
+                                  width: 12,
+                                  height: 3,
+                                  decoration: BoxDecoration(color: road, borderRadius: BorderRadius.circular(2)),
+                                ),
+                            ],
+                          ),
+                        ),
+                        if (scene.start case final i?) still(i, 0),
+                        if (scene.end case final i?) still(i, span),
+                        Positioned(
+                          left: arrive,
+                          top: 8 + bob,
+                          child: Opacity(
+                            opacity: fade,
+                            child: Icon(scene.mover, size: _icon - 12, color: mover),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    height: 56,
+                    child: _c.isCompleted ? ResultMark(widget.kind, size: 56, onDark: widget.onDark) : null,
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 OverlayEntry? _current;
 
 /// Animated "saved" card over whatever page comes next. Closes by itself or on a tap.
 void showSubmitSuccess(BuildContext context, String message, {String title = 'Success'}) =>
-    _show(context, ResultKind.success, title, message);
+    _show(context, ResultKind.success, title, message, null);
 
 /// Animated failure card for a refused submit. Stays until dismissed, so the reason is read.
-void showSubmitFailure(BuildContext context, Object error, {String title = 'Not completed'}) => _show(
-  context,
-  ResultKind.failure,
-  title,
-  error is ApiException && error.message.isNotEmpty ? error.message : 'Something went wrong.',
-);
+void showSubmitFailure(BuildContext context, Object error, {String title = 'Not completed', ResultScene? scene}) =>
+    _show(
+      context,
+      ResultKind.failure,
+      title,
+      error is ApiException && error.message.isNotEmpty ? error.message : 'Something went wrong.',
+      scene,
+    );
 
 /// An overlay rather than a route, so a page that pops or replaces itself right after
 /// submitting can never pop this card instead.
-void _show(BuildContext context, ResultKind kind, String title, String message) {
+void _show(BuildContext context, ResultKind kind, String title, String message, ResultScene? scene) {
   FocusManager.instance.primaryFocus?.unfocus();
   ScaffoldMessenger.maybeOf(context)?.hideCurrentSnackBar();
   _close(_current);
   late final OverlayEntry entry;
   entry = OverlayEntry(
-    builder: (_) => _ResultCard(kind: kind, title: title, message: message, onClose: () => _close(entry)),
+    builder: (_) => _ResultCard(kind: kind, title: title, message: message, scene: scene, onClose: () => _close(entry)),
   );
   _current = entry;
   Overlay.of(context, rootOverlay: true).insert(entry);
@@ -214,11 +347,18 @@ void _close(OverlayEntry? entry) {
 }
 
 class _ResultCard extends StatefulWidget {
-  const _ResultCard({required this.kind, required this.title, required this.message, required this.onClose});
+  const _ResultCard({
+    required this.kind,
+    required this.title,
+    required this.message,
+    required this.scene,
+    required this.onClose,
+  });
 
   final ResultKind kind;
   final String title;
   final String message;
+  final ResultScene? scene;
   final VoidCallback onClose;
 
   @override
@@ -288,7 +428,10 @@ class _ResultCardState extends State<_ResultCard> with SingleTickerProviderState
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          ResultMark(widget.kind, size: 80),
+                          if (widget.scene case final scene?)
+                            ResultSceneView(scene, widget.kind)
+                          else
+                            ResultMark(widget.kind, size: 80),
                           const SizedBox(height: 32),
                           Text(
                             widget.title,

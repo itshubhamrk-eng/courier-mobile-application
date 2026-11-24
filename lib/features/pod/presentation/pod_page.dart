@@ -202,7 +202,7 @@ class _PodPageState extends ConsumerState<PodPage> {
           return;
         }
       }
-      showSubmitFailure(context, e, title: 'Delivery not completed');
+      showSubmitFailure(context, e, title: 'Delivery not completed', scene: ResultScene.delivery);
     } finally {
       if (mounted) setState(() => _delivering = false);
     }
@@ -501,7 +501,7 @@ class _DoneView extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       children: [
         const SizedBox(height: 18),
-        ResultMark(shipment.status == 'DELIVERED' ? ResultKind.success : ResultKind.warning),
+        ResultSceneView(ResultScene.delivery, shipment.status == 'DELIVERED' ? ResultKind.success : ResultKind.warning),
         const SizedBox(height: 26),
         Text(
           shipment.trackingNumber,

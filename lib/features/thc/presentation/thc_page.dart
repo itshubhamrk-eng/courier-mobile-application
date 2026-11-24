@@ -241,7 +241,7 @@ class _ThcFormState extends ConsumerState<_ThcForm> {
       if (e.outcomeUnknown) {
         await _settleUnknown();
       } else {
-        showSubmitFailure(context, e, title: 'THC not generated');
+        showSubmitFailure(context, e, title: 'THC not generated', scene: ResultScene.outScan);
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -499,7 +499,7 @@ class _ResultView extends ConsumerWidget {
       padding: const EdgeInsets.all(20),
       children: [
         const SizedBox(height: 18),
-        const ResultMark(ResultKind.success),
+        const ResultSceneView(ResultScene.outScan, ResultKind.success),
         const SizedBox(height: 26),
         const Text(
           'THC generated',

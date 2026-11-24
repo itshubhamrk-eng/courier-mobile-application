@@ -82,7 +82,7 @@ class _ReceivePageState extends ConsumerState<ReceivePage> {
       if (!mounted) return;
       // In-scan of an already received shipment is refused per shipment by the
       // server, so retrying after a lost answer cannot double-receive.
-      showSubmitFailure(context, e, title: 'Receipt not saved');
+      showSubmitFailure(context, e, title: 'Receipt not saved', scene: ResultScene.inScan);
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -232,7 +232,7 @@ class _ResultView extends StatelessWidget {
     padding: const EdgeInsets.all(20),
     children: [
       const SizedBox(height: 18),
-      ResultMark(ResultKind.ofCounts(ok: result.successCount, failed: result.failureCount)),
+      ResultSceneView(ResultScene.inScan, ResultKind.ofCounts(ok: result.successCount, failed: result.failureCount)),
       const SizedBox(height: 26),
       Text(
         '${result.successCount} received${result.failureCount > 0 ? ', ${result.failureCount} failed' : ''}',

@@ -61,6 +61,20 @@ void main() {
     expect(find.text('page'), findsOneWidget);
   });
 
+  for (final scene in ResultScene.values) {
+    testWidgets('${scene.name} scene plays, then shows its mark', (t) async {
+      await pump(t);
+      showSubmitFailure(page, const ApiException(ApiErrorKind.validation, 'No'), scene: scene);
+      await t.pump(const Duration(milliseconds: 100));
+      expect(find.byIcon(scene.mover), findsOneWidget);
+      expect(find.byType(ResultMark), findsNothing);
+      await t.pumpAndSettle();
+      expect(find.byType(ResultMark), findsOneWidget);
+      await t.tap(find.text('OK'));
+      await t.pumpAndSettle();
+    });
+  }
+
   test('bulk outcome', () {
     expect(ResultKind.ofCounts(ok: 2, failed: 0), ResultKind.success);
     expect(ResultKind.ofCounts(ok: 1, failed: 1), ResultKind.warning);

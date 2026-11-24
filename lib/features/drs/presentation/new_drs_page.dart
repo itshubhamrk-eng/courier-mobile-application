@@ -170,6 +170,7 @@ class _NewDrsPageState extends ConsumerState<NewDrsPage> {
       showSubmitFailure(
         context,
         title: e.outcomeUnknown ? 'Not confirmed' : 'DRS not generated',
+        scene: ResultScene.delivery,
         e.outcomeUnknown
             ? const ApiException(
                 ApiErrorKind.timeout,
@@ -438,7 +439,7 @@ class _ResultPage extends ConsumerWidget {
         padding: const EdgeInsets.all(20),
         children: [
           const SizedBox(height: 18),
-          ResultMark(ResultKind.ofCounts(ok: result.successCount, failed: failed.length)),
+          ResultSceneView(ResultScene.delivery, ResultKind.ofCounts(ok: result.successCount, failed: failed.length)),
           const SizedBox(height: 26),
           if (result.drsNumber != null) ...[
             const Text(
