@@ -16,6 +16,8 @@ import '../../auth/application/auth_controller.dart';
 import '../../masters/data/masters.dart';
 import '../application/booking_draft.dart';
 import '../data/booking_repository.dart';
+import '../data/party_text.dart';
+import 'photo_details.dart';
 import '../../shell/branch_header.dart';
 
 /// Destination and packages first (one step) so charges show early; sender and
@@ -154,6 +156,8 @@ class _BookingPageState extends ConsumerState<BookingPage> {
                       children: [
                         _businessCustomerPicker(),
                         const SizedBox(height: 14),
+                        _photoCard(),
+                        const SizedBox(height: 14),
                         SectionCard(
                           title: 'Destination',
                           icon: Icons.place_outlined,
@@ -224,6 +228,88 @@ class _BookingPageState extends ConsumerState<BookingPage> {
     },
   );
 
+  /// On the first step too, because the photo also gives the pincode asked for here.
+  Widget _photoCard() => SectionCard(
+    title: 'Fill from photo (optional)',
+    icon: Icons.document_scanner_outlined,
+    color: AppColors.indigo,
+    children: [
+      const Text(
+        'Photograph a label, bill or visiting card. Check the details before using them.',
+        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+      ),
+      const SizedBox(height: 10),
+      Row(
+        children: [
+          for (final side in PartySide.values) ...[
+            if (side == PartySide.receiver) const SizedBox(width: 10),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _fillFromPhoto(side),
+                icon: const Icon(Icons.photo_camera_outlined),
+                label: Text(side.label),
+              ),
+            ),
+          ],
+        ],
+      ),
+    ],
+  );
+
+  Widget _photoButton(PartySide side) => TextButton.icon(
+    onPressed: () => _fillFromPhoto(side),
+    icon: const Icon(Icons.photo_camera_outlined, size: 18),
+    label: const Text('From photo'),
+  );
+
+  Future<void> _fillFromPhoto(PartySide side) async {
+    final read = await readPartyPhoto(context, ref, side);
+    if (read == null || !mounted) return;
+    final found = read.parties;
+    // A photo with both a From and a To part fills both, each after its own check.
+    final other = side == PartySide.sender ? PartySide.receiver : PartySide.sender;
+    for (final s in [side, if (found.has(other)) other]) {
+      final edited = await showPartyReview(
+        context,
+        s,
+        found.of(s),
+        current: _currentParty(s),
+        rawText: found.rawText,
+        photo: read.photo,
+      );
+      if (!mounted) return;
+      if (edited != null) _applyParty(s, edited);
+    }
+  }
+
+  PartyDetails _currentParty(PartySide side) {
+    final d = _draft;
+    return side == PartySide.sender
+        ? PartyDetails(name: d.senderName, contact: d.senderContact, address: d.senderAddress, pincode: d.pickupPincode)
+        : PartyDetails(
+            name: d.receiverName,
+            contact: d.receiverContact,
+            address: d.receiverAddress,
+            pincode: d.deliveryPincode,
+          );
+  }
+
+  void _applyParty(PartySide side, PartyDetails p) {
+    final prefix = side == PartySide.sender ? 'sender' : 'receiver';
+    final pinKey = side == PartySide.sender ? 'pickupPincode' : 'deliveryPincode';
+    final pinChanged = p.pincode != _currentParty(side).pincode;
+    _controllers['${prefix}Name']?.text = p.name;
+    _controllers['${prefix}Contact']?.text = p.contact;
+    _controllers['${prefix}Address']?.text = p.address;
+    if (!pinChanged) return;
+    _controllers[pinKey]?.text = p.pincode;
+    // A new pincode changes the delivery area and the price: both are chosen on the earlier steps.
+    if (_step != _stepShipment) {
+      setState(() => _step = _stepShipment);
+      showSuccess(context, 'Pincode changed. Check the destination area and charges again.');
+    }
+  }
+
   Widget _partiesStep() {
     final d = _draft;
     return Form(
@@ -235,6 +321,7 @@ class _BookingPageState extends ConsumerState<BookingPage> {
             title: 'Sender (consignor)',
             icon: Icons.north_east,
             color: AppColors.indigo,
+            trailing: _photoButton(PartySide.sender),
             children: [
               _PartyFields(
                 prefix: 'sender',
@@ -248,6 +335,7 @@ class _BookingPageState extends ConsumerState<BookingPage> {
             title: 'Receiver (consignee)',
             icon: Icons.south_west,
             color: AppColors.green,
+            trailing: _photoButton(PartySide.receiver),
             children: [
               _PartyFields(
                 prefix: 'receiver',

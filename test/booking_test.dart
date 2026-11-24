@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:branch_ops/app.dart';
 import 'package:branch_ops/core/network/api_client.dart';
@@ -7,6 +8,8 @@ import 'package:branch_ops/core/storage/secure_store.dart';
 import 'package:branch_ops/features/auth/application/auth_controller.dart';
 import 'package:branch_ops/features/booking/application/booking_draft.dart';
 import 'package:branch_ops/features/booking/data/booking_repository.dart';
+import 'package:branch_ops/features/booking/data/party_text.dart';
+import 'package:branch_ops/features/booking/presentation/photo_details.dart';
 import 'package:branch_ops/router.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +31,12 @@ const _ready = BookingDraft(
   serviceTypeId: 'svc-1',
   paymentModeId: 'pay-1',
 );
+
+ui.Image _testImage(int w, int h) {
+  final r = ui.PictureRecorder();
+  Canvas(r).drawColor(Colors.white, BlendMode.src);
+  return r.endRecording().toImageSync(w, h);
+}
 
 void main() {
   group('server preview mapping', () {
@@ -247,6 +256,7 @@ void main() {
       WidgetTester tester, {
       required bool timeoutOnCreate,
       bool oldServer = false,
+      List<TextLine> photo = const [],
     }) async {
       creates = [];
       previews = [];
@@ -267,6 +277,9 @@ void main() {
               return d;
             }),
             tokenSourceProvider.overrideWith((ref) => ref.watch(authControllerProvider.notifier)),
+            photoPathProvider.overrideWithValue((_) async => 'photo.jpg'),
+            photoImageProvider.overrideWithValue((_) async => _testImage(400, 300)),
+            photoTextProvider.overrideWithValue((_) async => photo),
           ],
           child: const BranchOpsApp(),
         ),
@@ -413,6 +426,85 @@ void main() {
       await tester.pumpAndSettle();
       expect(container.read(bookingDraftProvider).odaChargeOverride, 80);
       expect((previews.last.data as Map)['odaCharge'], 80, reason: 'edited ODA is sent for the server to price');
+    });
+
+    testWidgets('receiver photo: details are checked, corrected and filled; new pincode goes back to the area', (
+      tester,
+    ) async {
+      final container = await openBooking(
+        tester,
+        timeoutOnCreate: false,
+        photo: const [TextLine('Sai Medicals'), TextLine('Shop 4, Station Road'), TextLine('Karad 415110')],
+      );
+      for (var i = 0; i < 2; i++) {
+        await tester.tap(find.text('Next'));
+        await tester.pumpAndSettle();
+      }
+      await tester.ensureVisible(find.text('From photo').last);
+      await tester.tap(find.text('From photo').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Take photo'));
+      await tester.pumpAndSettle();
+      expect(find.text('Crop photo'), findsOneWidget);
+      await tester.tap(find.text('Retake'));
+      await tester.pumpAndSettle();
+      expect(find.text('Crop photo'), findsOneWidget, reason: 'a new photo is shown again');
+      await tester.tap(find.text('Read details'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Check receiver details'), findsOneWidget);
+      expect(find.text('Not found in the photo'), findsOneWidget, reason: 'no mobile number in it');
+      expect(
+        container.read(bookingDraftProvider).receiverName,
+        'Ravi Kumar',
+        reason: 'nothing filled before the check',
+      );
+      await tester.enterText(find.widgetWithText(TextFormField, 'Sai Medicals'), 'Sai Medical Stores');
+      await tester.tap(find.text('Use details'));
+      await tester.pumpAndSettle();
+
+      final d = container.read(bookingDraftProvider);
+      expect(d.receiverName, 'Sai Medical Stores');
+      expect(d.receiverContact, '9123456780', reason: 'kept when the photo has none');
+      expect(d.receiverAddress, 'Shop 4, Station Road, Karad');
+      expect(d.deliveryPincode, '415110');
+      expect(d.senderName, 'Asha Traders');
+      expect(find.text('Fill from photo (optional)').hitTestable(), findsOneWidget, reason: 'area must be rechecked');
+    });
+
+    testWidgets('unreadable photo changes nothing; a From / To photo fills both sides', (tester) async {
+      final photo = <TextLine>[];
+      final container = await openBooking(tester, timeoutOnCreate: false, photo: photo);
+      Future<void> shoot() async {
+        await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Sender'));
+        await tester.tap(find.widgetWithText(OutlinedButton, 'Sender'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Choose from gallery'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Read details'));
+        await tester.pumpAndSettle();
+      }
+
+      await shoot();
+      expect(find.textContaining('No details could be read'), findsOneWidget);
+      expect(container.read(bookingDraftProvider).senderName, 'Asha Traders');
+
+      photo.addAll(const [
+        TextLine('From: Patil Agro'),
+        TextLine('Kolhapur 416001'),
+        TextLine('To: Om Textiles'),
+        TextLine('Pune 411030'),
+      ]);
+      await shoot();
+      expect(find.text('Check sender details'), findsOneWidget);
+      await tester.tap(find.text('Use details'));
+      await tester.pumpAndSettle();
+      expect(find.text('Check receiver details'), findsOneWidget);
+      await tester.tap(find.text('Use details'));
+      await tester.pumpAndSettle();
+      final d = container.read(bookingDraftProvider);
+      expect((d.senderName, d.pickupPincode), ('Patil Agro', '416001'));
+      expect((d.receiverName, d.deliveryPincode), ('Om Textiles', '411030'));
     });
 
     testWidgets('missing fields stop the first step', (tester) async {
