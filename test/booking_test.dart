@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:branch_ops/app.dart';
 import 'package:branch_ops/core/network/api_client.dart';
@@ -30,6 +31,12 @@ const _ready = BookingDraft(
   serviceTypeId: 'svc-1',
   paymentModeId: 'pay-1',
 );
+
+ui.Image _testImage(int w, int h) {
+  final r = ui.PictureRecorder();
+  Canvas(r).drawColor(Colors.white, BlendMode.src);
+  return r.endRecording().toImageSync(w, h);
+}
 
 void main() {
   group('server preview mapping', () {
@@ -271,6 +278,7 @@ void main() {
             }),
             tokenSourceProvider.overrideWith((ref) => ref.watch(authControllerProvider.notifier)),
             photoPathProvider.overrideWithValue((_) async => 'photo.jpg'),
+            photoImageProvider.overrideWithValue((_) async => _testImage(400, 300)),
             photoTextProvider.overrideWithValue((_) async => photo),
           ],
           child: const BranchOpsApp(),
@@ -437,6 +445,12 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Take photo'));
       await tester.pumpAndSettle();
+      expect(find.text('Crop photo'), findsOneWidget);
+      await tester.tap(find.text('Retake'));
+      await tester.pumpAndSettle();
+      expect(find.text('Crop photo'), findsOneWidget, reason: 'a new photo is shown again');
+      await tester.tap(find.text('Read details'));
+      await tester.pumpAndSettle();
 
       expect(find.text('Check receiver details'), findsOneWidget);
       expect(find.text('Not found in the photo'), findsOneWidget, reason: 'no mobile number in it');
@@ -466,6 +480,8 @@ void main() {
         await tester.tap(find.widgetWithText(OutlinedButton, 'Sender'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Choose from gallery'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Read details'));
         await tester.pumpAndSettle();
       }
 

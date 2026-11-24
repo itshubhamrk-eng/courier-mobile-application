@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +11,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../../core/widgets/ui.dart';
 import '../data/party_text.dart';
+import 'photo_crop_page.dart';
 
 const _channel = MethodChannel('branch_ops/text_reader');
 
@@ -19,10 +21,29 @@ final photoPathProvider = Provider<Future<String?> Function(ImageSource source)>
       (source) async => (await ImagePicker().pickImage(source: source, imageQuality: 90, maxWidth: 2400))?.path,
 );
 
-/// Reads the text of a photo on the phone and deletes the photo: it is never uploaded.
-final photoTextProvider = Provider<Future<List<TextLine>> Function(String path)>(
+/// Loads the photo the right way up and deletes the picker's cached copy.
+final photoImageProvider = Provider<Future<ui.Image> Function(String path)>(
   (ref) => (path) async {
+    final file = File(path);
     try {
+      final codec = await ui.instantiateImageCodec(await file.readAsBytes());
+      final image = (await codec.getNextFrame()).image;
+      codec.dispose();
+      return image;
+    } finally {
+      await file.delete().catchError((_) => file);
+    }
+  },
+);
+
+/// Reads the text of the cropped photo on the phone: it is never uploaded.
+final photoTextProvider = Provider<Future<List<TextLine>> Function(ui.Image image)>(
+  (ref) => (image) async {
+    final png = await image.toByteData(format: ui.ImageByteFormat.png);
+    final dir = await Directory.systemTemp.createTemp('party-photo');
+    try {
+      final path = '${dir.path}/photo.png';
+      await File(path).writeAsBytes(png!.buffer.asUint8List());
       final rows = await _channel.invokeListMethod<Map<Object?, Object?>>('read', {'path': path}) ?? const [];
       double n(Map<Object?, Object?> r, String k) => (r[k] as num? ?? 0).toDouble();
       return [
@@ -30,15 +51,18 @@ final photoTextProvider = Provider<Future<List<TextLine>> Function(String path)>
           TextLine(r['text'] as String, Rect.fromLTRB(n(r, 'left'), n(r, 'top'), n(r, 'right'), n(r, 'bottom'))),
       ];
     } finally {
-      // The picker's own cached copy, not the gallery original.
-      await File(path).delete().catchError((_) => File(path));
+      await dir.delete(recursive: true).catchError((_) => dir);
     }
   },
 );
 
-/// Photo, then its text split into sender / receiver. Null when cancelled or unreadable
+/// Photo, crop, then its text split into sender / receiver. Null when cancelled or unreadable
 /// (the reason is shown).
-Future<PhotoParties?> readPartyPhoto(BuildContext context, WidgetRef ref, PartySide side) async {
+Future<({PhotoParties parties, ui.Image photo})?> readPartyPhoto(
+  BuildContext context,
+  WidgetRef ref,
+  PartySide side,
+) async {
   final source = await showModalBottomSheet<ImageSource>(
     context: context,
     showDragHandle: true,
@@ -68,16 +92,35 @@ Future<PhotoParties?> readPartyPhoto(BuildContext context, WidgetRef ref, PartyS
   if (source == null || !context.mounted) return null;
 
   void fail(String message) => showFailure(context, ApiException(ApiErrorKind.validation, message));
-  final String? path;
-  try {
-    path = await ref.read(photoPathProvider)(source);
-  } on PlatformException {
-    if (context.mounted) fail('The camera could not be opened. Allow camera access in phone settings.');
-    return null;
-  }
-  if (path == null || !context.mounted) return null;
-
   final navigator = Navigator.of(context, rootNavigator: true);
+  ui.Image? photo;
+  while (photo == null) {
+    final ui.Image image;
+    try {
+      final path = await ref.read(photoPathProvider)(source);
+      if (path == null || !context.mounted) return null;
+      image = await ref.read(photoImageProvider)(path);
+    } on PlatformException {
+      if (context.mounted) fail('The camera could not be opened. Allow camera access in phone settings.');
+      return null;
+    } on Exception {
+      if (context.mounted) fail('This photo could not be opened. Try another one.');
+      return null;
+    }
+    if (!context.mounted) return null;
+    // An earlier message would cover the crop page's buttons.
+    ScaffoldMessenger.of(context).clearSnackBars();
+    final result = await navigator.push<CropResult>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) =>
+            PhotoCropPage(image: image, retakeLabel: source == ImageSource.camera ? 'Retake' : 'Choose another'),
+      ),
+    );
+    if (!context.mounted || result == null) return null;
+    if (result is CropDone) photo = result.image;
+  }
+
   final busy = DialogRoute<void>(
     context: context,
     barrierDismissible: false,
@@ -96,10 +139,12 @@ Future<PhotoParties?> readPartyPhoto(BuildContext context, WidgetRef ref, PartyS
   );
   navigator.push(busy).ignore();
   try {
-    final lines = await ref.read(photoTextProvider)(path);
+    final lines = await ref.read(photoTextProvider)(photo);
     final found = parsePhoto(lines, side);
-    if (PartySide.values.any(found.has)) return found;
+    if (PartySide.values.any(found.has)) return (parties: found, photo: photo);
     if (context.mounted) fail('No details could be read. Take a closer, sharper photo in good light.');
+  } on FileSystemException {
+    if (context.mounted) fail('The photo could not be saved for reading. Free some phone storage.');
   } on PlatformException catch (e) {
     if (context.mounted) {
       fail(
@@ -123,21 +168,29 @@ Future<PartyDetails?> showPartyReview(
   PartyDetails found, {
   required PartyDetails current,
   required String rawText,
+  required ui.Image photo,
 }) => showModalBottomSheet<PartyDetails>(
   context: context,
   isScrollControlled: true,
   useSafeArea: true,
   showDragHandle: true,
-  builder: (_) => _ReviewSheet(side: side, found: found, current: current, rawText: rawText),
+  builder: (_) => _ReviewSheet(side: side, found: found, current: current, rawText: rawText, photo: photo),
 );
 
 class _ReviewSheet extends StatefulWidget {
-  const _ReviewSheet({required this.side, required this.found, required this.current, required this.rawText});
+  const _ReviewSheet({
+    required this.side,
+    required this.found,
+    required this.current,
+    required this.rawText,
+    required this.photo,
+  });
 
   final PartySide side;
   final PartyDetails found;
   final PartyDetails current;
   final String rawText;
+  final ui.Image photo;
 
   @override
   State<_ReviewSheet> createState() => _ReviewSheetState();
@@ -200,6 +253,18 @@ class _ReviewSheetState extends State<_ReviewSheet> {
               const Text(
                 'Correct anything that was read wrong.',
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              ),
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  height: 130,
+                  color: AppColors.field,
+                  child: InteractiveViewer(
+                    maxScale: 5,
+                    child: RawImage(image: widget.photo, fit: BoxFit.contain, width: double.infinity),
+                  ),
+                ),
               ),
               const SizedBox(height: 14),
               TextFormField(

@@ -263,12 +263,20 @@ class _BookingPageState extends ConsumerState<BookingPage> {
   );
 
   Future<void> _fillFromPhoto(PartySide side) async {
-    final found = await readPartyPhoto(context, ref, side);
-    if (found == null || !mounted) return;
+    final read = await readPartyPhoto(context, ref, side);
+    if (read == null || !mounted) return;
+    final found = read.parties;
     // A photo with both a From and a To part fills both, each after its own check.
     final other = side == PartySide.sender ? PartySide.receiver : PartySide.sender;
     for (final s in [side, if (found.has(other)) other]) {
-      final edited = await showPartyReview(context, s, found.of(s), current: _currentParty(s), rawText: found.rawText);
+      final edited = await showPartyReview(
+        context,
+        s,
+        found.of(s),
+        current: _currentParty(s),
+        rawText: found.rawText,
+        photo: read.photo,
+      );
       if (!mounted) return;
       if (edited != null) _applyParty(s, edited);
     }
