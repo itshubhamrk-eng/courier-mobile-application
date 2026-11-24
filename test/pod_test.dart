@@ -183,6 +183,10 @@ void main() {
     expect(fields['awbNumber'], 'AWB1');
     expect(form.files.map((f) => f.key), ['photo'], reason: 'no signature drawn');
     expect(find.text('POD uploaded, waiting for company review'), findsOneWidget);
+    expect(find.text('POD uploaded'), findsOneWidget, reason: 'success card');
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+    expect(find.text('POD uploaded'), findsNothing, reason: 'it closes by itself');
 
     await _complete(tester);
     expect(server.delivers, hasLength(1));

@@ -10,6 +10,7 @@ import '../../../core/format.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui.dart';
+import '../../../core/widgets/result_animation.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../masters/data/masters.dart';
@@ -941,7 +942,7 @@ class _SummaryStepState extends ConsumerState<_SummaryStep> {
       if (e.outcomeUnknown) {
         await _unknownOutcome();
       } else {
-        showFailure(context, e);
+        showSubmitFailure(context, e, title: 'Booking failed');
       }
     } finally {
       if (mounted) setState(() => _submitting = false);

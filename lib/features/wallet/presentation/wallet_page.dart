@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/format.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/result_animation.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../../core/widgets/ui.dart';
 import '../../masters/data/masters.dart';
@@ -104,7 +105,11 @@ class _Body extends ConsumerWidget {
       final t = await showManualMoneySheet(context, credit: credit, wallet: w);
       if (t == null || !context.mounted) return;
       refreshWallet(ref);
-      showSuccess(context, credit ? 'Wallet credited.' : 'Wallet debited.');
+      showSubmitSuccess(
+        context,
+        '${Fmt.money(t.amount)} posted.',
+        title: credit ? 'Wallet credited' : 'Wallet debited',
+      );
       await showTxnDetail(context, ref, t, wallet: w);
     }
 

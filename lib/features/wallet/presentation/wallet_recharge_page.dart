@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/format.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/result_animation.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../../core/widgets/ui.dart';
 import '../../auth/application/auth_controller.dart';
@@ -133,7 +134,6 @@ class _WalletRechargePageState extends ConsumerState<WalletRechargePage> {
           _settled = t;
           _phase = _Phase.success;
         });
-        showSuccess(context, 'Wallet recharged.');
         return;
       } on ApiException catch (e) {
         final retryable =
@@ -205,7 +205,6 @@ class _WalletRechargePageState extends ConsumerState<WalletRechargePage> {
     padding: const EdgeInsets.all(16),
     children: [
       HeroCard(
-        colors: const [AppColors.green, AppColors.teal],
         child: Row(
           children: [
             Expanded(
@@ -245,6 +244,7 @@ class _WalletRechargePageState extends ConsumerState<WalletRechargePage> {
           icon: Icons.error_outline,
           color: AppColors.danger,
           title: 'Recharge not completed',
+          kind: ResultKind.failure,
           message: _message ?? '',
           actions: [
             FilledButton.icon(onPressed: _reset, icon: const Icon(Icons.refresh), label: const Text('Try again')),
@@ -254,6 +254,7 @@ class _WalletRechargePageState extends ConsumerState<WalletRechargePage> {
           icon: Icons.hourglass_top,
           color: AppColors.warning,
           title: 'Confirming payment',
+          kind: ResultKind.warning,
           message: _message ?? '',
           actions: [
             if (_paid != null)
@@ -273,7 +274,7 @@ class _WalletRechargePageState extends ConsumerState<WalletRechargePage> {
   Widget _formCard(Wallet w) => SectionCard(
     title: 'Amount',
     icon: Icons.currency_rupee,
-    color: AppColors.green,
+    color: AppColors.indigo,
     children: [
       Form(
         key: _form,
@@ -289,8 +290,8 @@ class _WalletRechargePageState extends ConsumerState<WalletRechargePage> {
                 for (final q in _quick)
                   ActionChip(
                     label: Text('+ ${Fmt.money(q).replaceAll('.00', '')}'),
-                    labelStyle: const TextStyle(color: AppColors.green, fontWeight: FontWeight.w700),
-                    backgroundColor: AppColors.green.withValues(alpha: 0.1),
+                    labelStyle: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                     onPressed: _busy ? null : () => _add(q),
                   ),
               ],
@@ -303,7 +304,6 @@ class _WalletRechargePageState extends ConsumerState<WalletRechargePage> {
             ),
             const SizedBox(height: 4),
             FilledButton.icon(
-              style: FilledButton.styleFrom(backgroundColor: AppColors.green),
               onPressed: _busy ? null : () => _pay(w),
               icon: _busy
                   ? const SizedBox(
@@ -338,6 +338,9 @@ class _WalletRechargePageState extends ConsumerState<WalletRechargePage> {
       icon: Icons.check_circle_outline,
       color: AppColors.success,
       children: [
+        const SizedBox(height: 18),
+        const ResultMark(ResultKind.success),
+        const SizedBox(height: 26),
         Center(
           child: Text(
             '+${Fmt.money(t.amount)}',
@@ -379,11 +382,13 @@ class _WalletRechargePageState extends ConsumerState<WalletRechargePage> {
     required String title,
     required String message,
     required List<Widget> actions,
+    ResultKind? kind,
   }) => SectionCard(
     title: title,
     icon: icon,
     color: color,
     children: [
+      if (kind != null) ...[const SizedBox(height: 18), ResultMark(kind), const SizedBox(height: 26)],
       Text(message, style: const TextStyle(height: 1.4)),
       const SizedBox(height: 14),
       for (final a in actions) Padding(padding: const EdgeInsets.only(bottom: 8), child: a),

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/format.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/result_animation.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../../core/widgets/ui.dart';
 import '../../documents/document_page.dart';
@@ -297,7 +298,7 @@ class _ManualMoneySheetState extends ConsumerState<_ManualMoneySheet> {
     } on ApiException catch (e) {
       if (mounted) {
         setState(() => _busy = false);
-        showFailure(context, e);
+        showSubmitFailure(context, e, title: widget.credit ? 'Credit failed' : 'Debit failed');
       }
     }
   }

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/format.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/result_animation.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../shipments/data/shipment_repository.dart';
 import '../../documents/document_page.dart';
@@ -33,16 +34,11 @@ class BookingDonePage extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           children: [
             HeroCard(
-              colors: const [AppColors.green, AppColors.teal],
               child: Column(
                 children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                    child: const Icon(Icons.check_rounded, color: AppColors.green, size: 44),
-                  ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 18),
+                  const ResultMark(ResultKind.success, size: 64, onDark: true),
+                  const SizedBox(height: 22),
                   const Text(
                     'Shipment booked',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white),
@@ -79,7 +75,7 @@ class BookingDonePage extends ConsumerWidget {
                       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
                       child: Text(
                         'Net amount  ${Fmt.money(value.charges!.netAmount)}',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.green),
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.primary),
                       ),
                     ),
                   ],
