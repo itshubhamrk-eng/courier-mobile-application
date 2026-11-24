@@ -11,6 +11,7 @@ import '../../auth/application/auth_controller.dart';
 import '../../masters/data/masters.dart';
 import '../data/dashboard_repository.dart';
 import '../../shell/branch_header.dart';
+import '../../quick_scan/data/quick_scan_repository.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -57,10 +58,15 @@ class _Body extends ConsumerWidget {
     final branch = (ref.watch(branchNamesProvider).value ?? const {})[session?.operatingBranchId];
     void open(String route) => context.push(route);
 
+    final scan = ref.watch(quickScanAccessProvider);
     final actions = <_QuickAction>[
       if (can(Permissions.shipmentCreate))
         const _QuickAction('Book Shipment', Icons.add_box_outlined, '/bookings/new', AppColors.primary),
       if (can(Permissions.shipmentRead)) const _QuickAction('Track Shipment', Icons.search, '/track', AppColors.cyan),
+      if (scan.inScan)
+        const _QuickAction('Quick In-scan', Icons.move_to_inbox_outlined, '/quick-scan/in', AppColors.green),
+      if (scan.outScan)
+        const _QuickAction('Quick Out-scan', Icons.outbox_outlined, '/quick-scan/out', AppColors.orange),
       if (can(Permissions.manifestCreate))
         const _QuickAction('Loading Sheet', Icons.playlist_add_outlined, '/loading-sheets/new', AppColors.indigo),
       if (can(Permissions.manifestDispatch))

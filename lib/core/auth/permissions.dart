@@ -12,6 +12,10 @@ class Permissions {
   static const manifestCreate = 'MANIFEST_CREATE';
   static const manifestRead = 'MANIFEST_READ';
   static const manifestDispatch = 'MANIFEST_DISPATCH';
+  static const manifestReceive = 'MANIFEST_RECEIVE';
+  static const hubInScan = 'HUB_IN_SCAN';
+  static const hubOutScan = 'HUB_OUT_SCAN';
+  static const hubExceptionManage = 'HUB_EXCEPTION_MANAGE';
   static const deliveryAssign = 'DELIVERY_ASSIGN';
   static const deliveryRead = 'DELIVERY_READ';
   static const deliveryDeliver = 'DELIVERY_DELIVER';
