@@ -18,6 +18,7 @@ import 'features/loading_sheet/presentation/loading_sheet_detail_page.dart';
 import 'features/loading_sheet/presentation/loading_sheets_page.dart';
 import 'features/loading_sheet/presentation/new_loading_sheet_page.dart';
 import 'features/pod/presentation/pod_page.dart';
+import 'features/quick_scan/presentation/quick_scan_page.dart';
 import 'features/shell/app_shell.dart';
 import 'features/shipments/presentation/bookings_list_page.dart';
 import 'features/shipments/presentation/shipment_detail_page.dart';
@@ -136,6 +137,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/pod',
         builder: (_, state) => PodPage(shipmentId: state.uri.queryParameters['shipmentId']),
+      ),
+      GoRoute(
+        path: '/quick-scan/in',
+        builder: (_, _) => const QuickScanPage(mode: QuickScanMode.inScan),
+      ),
+      GoRoute(
+        path: '/quick-scan/out',
+        builder: (_, _) => const QuickScanPage(mode: QuickScanMode.outScan),
       ),
       GoRoute(path: '/wallet', builder: (_, _) => const WalletPage()),
       GoRoute(path: '/wallet/recharge', builder: (_, _) => const WalletRechargePage()),

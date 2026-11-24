@@ -114,7 +114,10 @@ Map<String, dynamic> _detail(String status) => {
 };
 
 class _Server {
-  _Server({this.signedIn = true, this.expired = false, this.walletManager = false});
+  _Server({this.signedIn = true, this.expired = false, this.walletManager = false, this.quickScan = false});
+
+  /// Serves AL10077: 10 packages, dispatched to this branch.
+  final bool quickScan;
 
   final bool signedIn;
   final bool expired;
@@ -125,6 +128,26 @@ class _Server {
 
   Future<FakeResponse> handle(RequestOptions r) async {
     final q = r.queryParameters;
+    if (quickScan && r.path.startsWith('/api/v1/shipments/track/')) {
+      return (
+        status: 200,
+        body: ok({
+          'id': 's77',
+          'shipmentNumber': 'KOP-26-0877',
+          'trackingNumber': 'AL10077',
+          'status': 'DISPATCHED',
+          'numberOfPackages': 10,
+          'chargeableWeight': 64,
+          'nextLocationId': 'b-pune',
+          'deliveryBranchId': 'b-pune',
+          'senderName': 'Patil Agro',
+          'receiverName': 'Om Textiles',
+          'receiverContact': '9890011122',
+          'fromCity': 'Kolhapur',
+          'toCity': 'Pune',
+        }),
+      );
+    }
     switch (r.path) {
       case '/api/v1/auth/refresh':
         if (expired) return (status: 401, body: errorBody('Session expired'));
@@ -143,6 +166,7 @@ class _Server {
                 'DELIVERY_ASSIGN',
                 'DELIVERY_UPLOAD',
                 'DELIVERY_READ',
+                if (quickScan) 'MANIFEST_RECEIVE',
                 if (walletManager) ...['WALLET_READ', 'WALLET_RECHARGE'],
               ],
               roles: walletManager ? const ['BRANCH_MANAGER'] : const ['BOOKING_OPERATOR'],
@@ -710,6 +734,21 @@ void main() {
     );
     await go(t, c, '/bookings/new');
     await shot(t, '05b_booking_two_packages');
+  });
+
+  testWidgets('26 quick in-scan', (t) async {
+    final c = await boot(t, _Server(quickScan: true), height: 1150);
+    unawaited(c.read(routerProvider).push('/quick-scan/in'));
+    await t.pumpAndSettle();
+    for (var i = 1; i <= 8; i++) {
+      await t.enterText(find.byType(EditableText).first, 'AL10077-00$i');
+      await t.testTextInput.receiveAction(TextInputAction.done);
+      await t.pumpAndSettle();
+    }
+    await shot(t, '26_quick_in_scan');
+    await t.tap(find.text('In-scan').last);
+    await t.pumpAndSettle();
+    await shot(t, '27_quick_in_scan_short');
   });
 
   testWidgets('24 wallet', (t) async {
