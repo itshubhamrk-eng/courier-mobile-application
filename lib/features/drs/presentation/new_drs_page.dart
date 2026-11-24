@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/scanner_page.dart';
+import '../../../core/widgets/result_animation.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../masters/data/masters.dart';
@@ -166,8 +167,9 @@ class _NewDrsPageState extends ConsumerState<NewDrsPage> {
       }
     } on ApiException catch (e) {
       if (!mounted) return;
-      showFailure(
+      showSubmitFailure(
         context,
+        title: e.outcomeUnknown ? 'Not confirmed' : 'DRS not generated',
         e.outcomeUnknown
             ? const ApiException(
                 ApiErrorKind.timeout,
@@ -435,12 +437,9 @@ class _ResultPage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Icon(
-            failed.isEmpty ? Icons.check_circle : Icons.warning_amber_rounded,
-            size: 60,
-            color: failed.isEmpty ? AppColors.success : AppColors.warning,
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 18),
+          ResultMark(ResultKind.ofCounts(ok: result.successCount, failed: failed.length)),
+          const SizedBox(height: 26),
           if (result.drsNumber != null) ...[
             const Text(
               'DRS number',

@@ -10,6 +10,7 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/scanner_page.dart';
 import '../../../core/widgets/signature_pad.dart';
+import '../../../core/widgets/result_animation.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../drs/presentation/drs_widgets.dart';
@@ -148,7 +149,7 @@ class _PodPageState extends ConsumerState<PodPage> {
         _pod = pod;
         _replacing = false;
       });
-      showSuccess(context, 'POD uploaded.');
+      showSubmitSuccess(context, 'Proof of delivery is saved.', title: 'POD uploaded');
     } on ApiException catch (e) {
       if (!mounted) return;
       if (e.outcomeUnknown) {
@@ -160,11 +161,11 @@ class _PodPageState extends ConsumerState<PodPage> {
             _pod = latest;
             _replacing = false;
           });
-          showSuccess(context, 'POD uploaded.');
+          showSubmitSuccess(context, 'Proof of delivery is saved.', title: 'POD uploaded');
           return;
         }
       }
-      showFailure(context, e);
+      showSubmitFailure(context, e, title: 'POD not uploaded');
     } finally {
       if (mounted) {
         setState(() {
@@ -201,7 +202,7 @@ class _PodPageState extends ConsumerState<PodPage> {
           return;
         }
       }
-      showFailure(context, e);
+      showSubmitFailure(context, e, title: 'Delivery not completed');
     } finally {
       if (mounted) setState(() => _delivering = false);
     }
@@ -499,12 +500,9 @@ class _DoneView extends StatelessWidget {
     body: ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        Icon(
-          shipment.status == 'DELIVERED' ? Icons.check_circle : Icons.info_outline,
-          size: 64,
-          color: shipment.status == 'DELIVERED' ? AppColors.success : AppColors.warning,
-        ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 18),
+        ResultMark(shipment.status == 'DELIVERED' ? ResultKind.success : ResultKind.warning),
+        const SizedBox(height: 26),
         Text(
           shipment.trackingNumber,
           textAlign: TextAlign.center,

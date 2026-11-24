@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/scanner_page.dart';
+import '../../../core/widgets/result_animation.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../loading_sheet/presentation/loading_sheet_detail_page.dart';
@@ -81,7 +82,7 @@ class _ReceivePageState extends ConsumerState<ReceivePage> {
       if (!mounted) return;
       // In-scan of an already received shipment is refused per shipment by the
       // server, so retrying after a lost answer cannot double-receive.
-      showFailure(context, e);
+      showSubmitFailure(context, e, title: 'Receipt not saved');
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -102,7 +103,6 @@ class _ReceivePageState extends ConsumerState<ReceivePage> {
                 padding: const EdgeInsets.all(16),
                 children: [
                   HeroCard(
-                    colors: const [AppColors.teal, AppColors.cyan],
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -231,12 +231,9 @@ class _ResultView extends StatelessWidget {
   Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.all(20),
     children: [
-      Icon(
-        result.failureCount == 0 ? Icons.check_circle : Icons.warning_amber_rounded,
-        size: 56,
-        color: result.failureCount == 0 ? AppColors.success : AppColors.warning,
-      ),
-      const SizedBox(height: 8),
+      const SizedBox(height: 18),
+      ResultMark(ResultKind.ofCounts(ok: result.successCount, failed: result.failureCount)),
+      const SizedBox(height: 26),
       Text(
         '${result.successCount} received${result.failureCount > 0 ? ', ${result.failureCount} failed' : ''}',
         textAlign: TextAlign.center,

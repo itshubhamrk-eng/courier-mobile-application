@@ -6,6 +6,7 @@ import '../../../core/format.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/scanner_page.dart';
+import '../../../core/widgets/result_animation.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../auth/application/auth_controller.dart';
@@ -178,7 +179,7 @@ class _NewLoadingSheetPageState extends ConsumerState<NewLoadingSheetPage> {
             remarks: _remarks.text,
           );
       if (!mounted) return;
-      showSuccess(context, 'Loading sheet ${sheet.number} created.');
+      showSubmitSuccess(context, '${sheet.number} is ready.', title: 'Loading sheet created');
       context.pushReplacement('/loading-sheets/${sheet.id}');
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -204,7 +205,7 @@ class _NewLoadingSheetPageState extends ConsumerState<NewLoadingSheetPage> {
           ),
         );
       } else {
-        showFailure(context, e);
+        showSubmitFailure(context, e, title: 'Loading sheet not created');
         // Something changed on the server (e.g. another user loaded a shipment): refresh the list.
         await _setDestination(dest);
       }

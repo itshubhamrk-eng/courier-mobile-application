@@ -8,6 +8,7 @@ import '../../../core/config/env.dart';
 import '../../../core/format.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/result_animation.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../core/widgets/ui.dart';
@@ -70,12 +71,12 @@ class _TopupRequestPageState extends ConsumerState<TopupRequestPage> {
       );
       if (!mounted) return;
       ref.invalidate(_topupsProvider);
-      showSuccess(context, 'Top-up request sent to your company admin.');
+      showSubmitSuccess(context, 'Sent to your company admin.', title: 'Top-up requested');
       Navigator.of(context).pop();
     } on ApiException catch (e) {
       if (mounted) {
         setState(() => _busy = false);
-        showFailure(context, e);
+        showSubmitFailure(context, e, title: 'Request not sent');
       }
     }
   }
@@ -209,9 +210,13 @@ class _TopupRequestsPageState extends ConsumerState<TopupRequestsPage> {
       if (!mounted) return;
       refreshWallet(ref);
       ref.invalidate(_topupsProvider);
-      showSuccess(context, approve ? 'Approved: ${Fmt.money(r.amount)} credited.' : 'Request rejected.');
+      showSubmitSuccess(
+        context,
+        '${Fmt.money(r.amount)} ${approve ? 'credited' : 'was not credited'}.',
+        title: approve ? 'Top-up approved' : 'Request rejected',
+      );
     } on ApiException catch (e) {
-      if (mounted) showFailure(context, e);
+      if (mounted) showSubmitFailure(context, e);
     } finally {
       if (mounted) setState(() => _deciding = null);
     }

@@ -7,6 +7,7 @@ import '../../../core/format.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/scanner_page.dart';
+import '../../../core/widgets/result_animation.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../auth/application/auth_controller.dart';
@@ -240,7 +241,7 @@ class _ThcFormState extends ConsumerState<_ThcForm> {
       if (e.outcomeUnknown) {
         await _settleUnknown();
       } else {
-        showFailure(context, e);
+        showSubmitFailure(context, e, title: 'THC not generated');
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -254,17 +255,17 @@ class _ThcFormState extends ConsumerState<_ThcForm> {
       if (!mounted) return;
       if (sheet.status != 'CREATED') {
         setState(() => _result = sheet);
-        showSuccess(context, 'THC ${sheet.number} was generated.');
         return;
       }
-      showFailure(
+      showSubmitFailure(
         context,
         const ApiException(ApiErrorKind.timeout, 'THC was not generated (server timed out). You can try again.'),
       );
     } on ApiException {
       if (!mounted) return;
-      showFailure(
+      showSubmitFailure(
         context,
+        title: 'Not confirmed',
         const ApiException(
           ApiErrorKind.timeout,
           'Could not confirm whether the THC was generated. Check the Dispatched tab before trying again.',
@@ -497,8 +498,9 @@ class _ResultView extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        const Icon(Icons.check_circle, color: AppColors.success, size: 64),
-        const SizedBox(height: 8),
+        const SizedBox(height: 18),
+        const ResultMark(ResultKind.success),
+        const SizedBox(height: 26),
         const Text(
           'THC generated',
           textAlign: TextAlign.center,

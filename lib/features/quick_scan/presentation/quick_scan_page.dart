@@ -6,6 +6,7 @@ import '../../../core/format.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/scanner_page.dart';
+import '../../../core/widgets/result_animation.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../core/widgets/ui.dart';
@@ -21,17 +22,15 @@ import '../data/package_tally.dart';
 import '../data/quick_scan_repository.dart';
 
 enum QuickScanMode {
-  inScan('In-scan', 'DISPATCHED', AppColors.green, AppColors.teal, Icons.move_to_inbox_outlined),
-  outScan('Out-scan', 'MANIFEST_CREATED', AppColors.orange, AppColors.pink, Icons.outbox_outlined);
+  inScan('In-scan', 'DISPATCHED', Icons.move_to_inbox_outlined),
+  outScan('Out-scan', 'MANIFEST_CREATED', Icons.outbox_outlined);
 
-  const QuickScanMode(this.label, this.requiredStatus, this.color, this.color2, this.icon);
+  const QuickScanMode(this.label, this.requiredStatus, this.icon);
 
   final String label;
 
   /// The only status the server accepts this scan from.
   final String requiredStatus;
-  final Color color;
-  final Color color2;
   final IconData icon;
 }
 
@@ -222,7 +221,7 @@ class _QuickScanPageState extends ConsumerState<QuickScanPage> {
       }
       ref.invalidate(dashboardCountsProvider);
     } on ApiException catch (e) {
-      if (mounted) showFailure(context, e);
+      if (mounted) showSubmitFailure(context, e, title: '${_mode.label} failed');
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -431,7 +430,6 @@ class _QuickScanPageState extends ConsumerState<QuickScanPage> {
                   ],
                   Expanded(
                     child: FilledButton.icon(
-                      style: FilledButton.styleFrom(backgroundColor: _mode.color),
                       onPressed: t.scanned.isEmpty || _submitting ? null : _submit,
                       icon: _submitting
                           ? const SizedBox(
@@ -455,11 +453,11 @@ class _QuickScanPageState extends ConsumerState<QuickScanPage> {
     padding: const EdgeInsets.all(16),
     children: [
       HeroCard(
-        colors: d.short ? const [AppColors.orange, AppColors.amber] : [_mode.color, _mode.color2],
         child: Column(
           children: [
-            Icon(d.short ? Icons.warning_amber_rounded : Icons.check_circle, size: 56, color: Colors.white),
-            const SizedBox(height: 8),
+            const SizedBox(height: 18),
+            ResultMark(d.short ? ResultKind.warning : ResultKind.success, size: 64, onDark: true),
+            const SizedBox(height: 22),
             Text(
               d.short ? '${_mode.label} done, short' : '${_mode.label} done',
               style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
@@ -626,7 +624,6 @@ class _ShipmentCard extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         HeroCard(
-          colors: [mode.color, mode.color2],
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -688,13 +685,13 @@ class _TallyCard extends StatelessWidget {
   Widget build(BuildContext context) => SectionCard(
     title: 'Packages scanned',
     icon: Icons.qr_code_scanner,
-    color: mode.color,
+    color: AppColors.indigo,
     trailing: Text(
       '${tally.scanned.length} / ${tally.quantity}',
       style: TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.w800,
-        color: tally.complete ? AppColors.success : AppColors.warning,
+        color: tally.complete ? AppColors.success : AppColors.primary,
       ),
     ),
     children: [
@@ -704,7 +701,7 @@ class _TallyCard extends StatelessWidget {
           value: tally.scanned.length / tally.quantity,
           minHeight: 8,
           backgroundColor: AppColors.field,
-          color: tally.complete ? AppColors.success : mode.color,
+          color: tally.complete ? AppColors.success : AppColors.primary,
         ),
       ),
       const SizedBox(height: 12),

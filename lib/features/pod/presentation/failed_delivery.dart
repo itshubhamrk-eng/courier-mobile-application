@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/auth/permissions.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/result_animation.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../shipments/data/shipment_models.dart';
@@ -75,7 +76,7 @@ Future<DeliveryAttempt?> recordFailedDelivery(
       );
       return null;
     }
-    showFailure(context, e);
+    showSubmitFailure(context, e, title: 'Attempt not recorded');
     return null;
   }
 }
