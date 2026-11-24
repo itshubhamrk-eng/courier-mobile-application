@@ -260,6 +260,9 @@ void main() {
       await type(t, 'AWB100');
       await submit(t, 'In-scan');
       expect(find.text('Receiving branch does not match.'), findsOneWidget);
+      expect(find.text('In-scan failed'), findsOneWidget);
+      await t.tap(find.text('OK'));
+      await t.pumpAndSettle();
       expect(find.text('1 / 1'), findsOneWidget);
     });
 

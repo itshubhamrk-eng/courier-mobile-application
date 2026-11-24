@@ -105,6 +105,16 @@ class AppTheme {
           borderSide: const BorderSide(color: AppColors.danger, width: 1.6),
         ),
       ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: AppColors.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        titleTextStyle: base.textTheme.titleLarge?.copyWith(
+          color: AppColors.textPrimary,
+          fontSize: 20,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
       dividerTheme: const DividerThemeData(color: AppColors.border, space: 1, thickness: 1),
       chipTheme: base.chipTheme.copyWith(
         side: BorderSide.none,
