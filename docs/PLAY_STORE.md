@@ -137,7 +137,7 @@ From the merged release manifest (`aapt2 dump permissions`):
 
 | Permission | Why |
 |---|---|
-| `CAMERA` | Scan shipment barcodes / QR codes; take proof-of-delivery photos. Requested only when the scanner or camera opens. |
+| `CAMERA` | Scan shipment barcodes / QR codes; take proof-of-delivery photos; photograph sender / receiver details to fill a booking (read on the device, not uploaded). Requested only when the scanner or camera opens. |
 | `INTERNET` | Talk to the courier server. |
 | `ACCESS_NETWORK_STATE` | Show the offline banner and avoid sending while offline. |
 | `NFC` | Added by the Razorpay SDK: tap-to-pay cards in checkout. Normal permission, no prompt. |

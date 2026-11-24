@@ -76,3 +76,10 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // Reads customer details from a photo, on the device. Models come from Google Play
+    // services (see the manifest), so they add almost nothing to the APK.
+    implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.1")
+    implementation("com.google.android.gms:play-services-mlkit-text-recognition-devanagari:16.0.1")
+}
