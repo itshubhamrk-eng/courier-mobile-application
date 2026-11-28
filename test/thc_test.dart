@@ -49,7 +49,7 @@ void main() {
     expect(body['departureTime'], '2026-10-24T09:30:00.000Z');
     expect(body['fuelCost'], 500);
     expect(body['tollAmount'], isNull);
-    expect(r.number, 'LS-1', reason: 'THC number is the loading sheet number');
+    expect(r.number, 'LS-1', reason: 'Manifest No is the manifest number');
   });
 
   Future<List<RequestOptions>> run(
@@ -138,7 +138,7 @@ void main() {
       await tester.pump(const Duration(seconds: 5));
       await tester.pumpAndSettle();
     } else {
-      expect(find.textContaining('Out-scan'), findsNothing);
+      expect(find.textContaining('Out Scan'), findsNothing);
     }
 
     await tester.tap(find.text('Vehicle'));
@@ -165,25 +165,25 @@ void main() {
     final dispatches = await run(tester);
     expect(dispatches, hasLength(1));
     expect((dispatches.single.data as Map)['vehicleId'], 'v1');
-    expect(find.text('THC generated'), findsOneWidget);
+    expect(find.text('Manifest finalized'), findsOneWidget);
     expect(find.text('LS-1'), findsWidgets);
   });
 
-  testWidgets('hub sheet: out-scan each AWB before generating', (tester) async {
+  testWidgets('hub sheet: out scan each AWB before generating', (tester) async {
     final dispatches = await run(tester, fromHub: true);
     expect(dispatches, hasLength(1));
-    expect(find.text('THC generated'), findsOneWidget);
+    expect(find.text('Manifest finalized'), findsOneWidget);
   });
 
   testWidgets('lost answer: reads the sheet back and shows the THC instead of retrying', (tester) async {
     final dispatches = await run(tester, timeout: true);
     expect(dispatches, hasLength(1));
-    expect(find.text('THC generated'), findsOneWidget);
+    expect(find.text('Manifest finalized'), findsOneWidget);
   });
 
   testWidgets('already dispatched sheet shows its THC, no second form', (tester) async {
     await run(tester, sheetStatus: 'DISPATCHED');
-    expect(find.textContaining('already has a THC'), findsOneWidget);
+    expect(find.textContaining('already finalized'), findsOneWidget);
     expect(find.text('Pick driver'), findsNothing);
   });
 }

@@ -43,7 +43,7 @@ const _operations = [
   ),
   _Item('Track Shipment', Icons.my_location, '/track', permission: Permissions.shipmentRead, color: AppColors.cyan),
   _Item(
-    'Loading Sheet',
+    'Manifest Creation',
     Icons.qr_code_scanner,
     '/loading-sheets',
     permission: Permissions.manifestRead,
@@ -51,14 +51,14 @@ const _operations = [
     color: AppColors.purple,
   ),
   _Item(
-    'Trip Hire Challan (THC)',
+    'Manifest Finalization',
     Icons.outbound_outlined,
     '/thc',
     permission: Permissions.manifestDispatch,
     color: AppColors.teal,
   ),
   _Item(
-    'In Scan',
+    'Manifest In Scan',
     Icons.move_to_inbox_outlined,
     '/delivery',
     permission: Permissions.manifestRead,
@@ -148,7 +148,7 @@ class AppDrawer extends ConsumerWidget {
                           _Pill(
                             title: item.title,
                             icon: item.icon,
-                            active: item.tab && location == item.route && item.title != 'In Scan',
+                            active: item.tab && location == item.route && item.title != 'Manifest In Scan',
                             onTap: () => go(item.route, tab: item.tab),
                           ),
                         if (walletAccess.view) ...[

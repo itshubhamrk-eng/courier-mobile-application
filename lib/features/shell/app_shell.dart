@@ -32,7 +32,7 @@ class AppShell extends StatelessWidget {
         NavigationDestination(
           icon: Icon(Icons.list_alt_outlined),
           selectedIcon: Icon(Icons.list_alt),
-          label: 'Loading',
+          label: 'Manifests',
         ),
         NavigationDestination(
           icon: Icon(Icons.delivery_dining_outlined),

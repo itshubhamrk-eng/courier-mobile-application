@@ -6,8 +6,8 @@ import '../theme/app_theme.dart';
 /// entry status). Unknown values are shown as sent, never guessed.
 ({String label, Color color}) statusStyle(String status) => switch (status) {
   'BOOKED' => (label: 'Booked', color: AppColors.info),
-  'READY_FOR_MANIFEST' => (label: 'Ready for Loading', color: AppColors.info),
-  'MANIFEST_CREATED' => (label: 'Loading Sheet Created', color: AppColors.primary),
+  'READY_FOR_MANIFEST' => (label: 'Ready for Manifest', color: AppColors.info),
+  'MANIFEST_CREATED' => (label: 'Manifest Created', color: AppColors.primary),
   'DISPATCHED' => (label: 'Dispatched', color: AppColors.primary),
   'IN_SCAN' => (label: 'Received', color: AppColors.primary),
   'OUT_FOR_DELIVERY' => (label: 'Out for Delivery', color: AppColors.warning),

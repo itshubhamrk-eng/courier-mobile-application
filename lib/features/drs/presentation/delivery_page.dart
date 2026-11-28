@@ -61,7 +61,7 @@ class DeliveryPage extends ConsumerWidget {
       child: Scaffold(
         appBar: sectionBar(
           'Delivery',
-          bottom: sectionTabs(const [Tab(text: 'In Scan'), Tab(text: 'Delivery runs')]),
+          bottom: sectionTabs(const [Tab(text: 'Manifest In Scan'), Tab(text: 'Delivery runs')]),
         ),
         floatingActionButton: canAssign
             ? FloatingActionButton.extended(
@@ -93,7 +93,7 @@ class _ReceiveTab extends ConsumerWidget {
       child: switch (incoming) {
         AsyncData(:final value) when value.isEmpty => ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: const [SizedBox(height: 300, child: EmptyView(message: 'No THC on its way to your branch.'))],
+          children: const [SizedBox(height: 300, child: EmptyView(message: 'No manifest on its way to your branch.'))],
         ),
         AsyncData(:final value) => ListView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -101,7 +101,7 @@ class _ReceiveTab extends ConsumerWidget {
           children: [
             const Padding(
               padding: EdgeInsets.only(bottom: 8),
-              child: Text('Incoming THCs: tap to receive', style: TextStyle(fontWeight: FontWeight.w700)),
+              child: Text('Incoming manifests: tap to receive', style: TextStyle(fontWeight: FontWeight.w700)),
             ),
             for (final s in value)
               Padding(

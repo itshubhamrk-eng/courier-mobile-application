@@ -32,7 +32,7 @@ class LoadingSheetsPage extends ConsumerWidget {
     return DefaultTabController(
       length: _tabs.length,
       child: Scaffold(
-        appBar: sectionBar('Loading Sheets', bottom: sectionTabs([for (final (_, label) in _tabs) Tab(text: label)])),
+        appBar: sectionBar('Manifests', bottom: sectionTabs([for (final (_, label) in _tabs) Tab(text: label)])),
         floatingActionButton: canCreate
             ? FloatingActionButton.extended(
                 onPressed: () async {
@@ -67,7 +67,7 @@ class _SheetList extends ConsumerWidget {
           children: [
             SizedBox(
               height: 300,
-              child: EmptyView(message: status == 'CREATED' ? 'No open loading sheets.' : 'Nothing here yet.'),
+              child: EmptyView(message: status == 'CREATED' ? 'No open manifests.' : 'Nothing here yet.'),
             ),
           ],
         ),

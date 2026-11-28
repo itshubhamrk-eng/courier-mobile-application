@@ -52,7 +52,7 @@ void main() {
           branchId: b,
           mode: LoadingMode.hub,
         ),
-        'Already on a loading sheet.',
+        'Already on a manifest.',
       );
     });
     test('at another branch', () {
@@ -209,7 +209,7 @@ void main() {
     // Let the message snackbar (it floats over the action bar) time out first.
     await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Create loading sheet'));
+    await tester.tap(find.text('Create manifest'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Create'));
     await tester.pumpAndSettle();
@@ -217,6 +217,6 @@ void main() {
     expect(creates, hasLength(1));
     expect((creates.single.data as Map)['shipmentIds'], ['s1', 's2']);
     expect(find.text('LS-1'), findsWidgets, reason: 'opens the new sheet');
-    expect(find.text('Generate THC'), findsOneWidget);
+    expect(find.text('Finalize Manifest'), findsOneWidget);
   });
 }

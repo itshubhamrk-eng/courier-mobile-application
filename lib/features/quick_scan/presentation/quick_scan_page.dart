@@ -22,8 +22,8 @@ import '../data/package_tally.dart';
 import '../data/quick_scan_repository.dart';
 
 enum QuickScanMode {
-  inScan('In-scan', 'DISPATCHED', Icons.move_to_inbox_outlined, ResultScene.inScan),
-  outScan('Out-scan', 'MANIFEST_CREATED', Icons.outbox_outlined, ResultScene.outScan);
+  inScan('In Scan', 'DISPATCHED', Icons.move_to_inbox_outlined, ResultScene.inScan),
+  outScan('Out Scan', 'MANIFEST_CREATED', Icons.outbox_outlined, ResultScene.outScan);
 
   const QuickScanMode(this.label, this.requiredStatus, this.icon, this.scene);
 
@@ -180,8 +180,8 @@ class _QuickScanPageState extends ConsumerState<QuickScanPage> {
     if (s.status != _mode.requiredStatus) {
       final now = statusStyle(s.status).label;
       return _mode == QuickScanMode.inScan
-          ? 'Cannot in-scan: this shipment is "$now". Only dispatched shipments can be received.'
-          : 'Cannot out-scan: this shipment is "$now". It must be on an open loading sheet.';
+          ? 'Cannot in scan: this shipment is "$now". Only dispatched shipments can be received.'
+          : 'Cannot out scan: this shipment is "$now". It must be on an open manifest.';
     }
     if (_mode == QuickScanMode.inScan) {
       final next = s.s('nextLocationId') ?? s.deliveryBranchId;
@@ -190,7 +190,7 @@ class _QuickScanPageState extends ConsumerState<QuickScanPage> {
         return 'This shipment is for ${name ?? 'another branch'}, not your branch.';
       }
     } else if (_sheet != null && _sheet!.bookingBranchId != _branchId) {
-      return 'Loading sheet ${_sheet!.number} belongs to another branch.';
+      return 'Manifest ${_sheet!.number} belongs to another branch.';
     }
     return null;
   }
@@ -203,7 +203,7 @@ class _QuickScanPageState extends ConsumerState<QuickScanPage> {
     String? remarks;
     if (!t.complete) {
       if (_mode == QuickScanMode.outScan && !ref.read(quickScanAccessProvider).raiseException) {
-        _warn('Only ${t.scanned.length} of ${t.quantity} packages scanned. Your role cannot record a short out-scan.');
+        _warn('Only ${t.scanned.length} of ${t.quantity} packages scanned. Your role cannot record a short out scan.');
         return;
       }
       final note = await showDialog<String>(
@@ -266,7 +266,7 @@ class _QuickScanPageState extends ConsumerState<QuickScanPage> {
   Future<void> _outScan(PackageTally t, String? remarks) async {
     final manifestId = _shipment!.s('manifestId');
     if (manifestId == null) {
-      throw const ApiException(ApiErrorKind.validation, 'This shipment is not on a loading sheet.');
+      throw const ApiException(ApiErrorKind.validation, 'This shipment is not on a manifest.');
     }
     try {
       final outcome =
@@ -276,7 +276,7 @@ class _QuickScanPageState extends ConsumerState<QuickScanPage> {
               .firstOrNull;
       final alreadyOurs = _outScanMaybeSent && (outcome?.message ?? '').startsWith('Already out-scanned');
       if (outcome == null || (!outcome.success && !alreadyOurs)) {
-        throw ApiException(ApiErrorKind.validation, outcome?.message ?? 'The shipment could not be out-scanned.');
+        throw ApiException(ApiErrorKind.validation, outcome?.message ?? 'The shipment could not be out scanned.');
       }
     } on ApiException catch (e) {
       if (e.outcomeUnknown) _outScanMaybeSent = true;
@@ -575,7 +575,7 @@ class _ShortDialogState extends State<_ShortDialog> {
     final received = widget.mode == QuickScanMode.inScan;
     return AlertDialog(
       icon: const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 40),
-      title: Text(received ? 'Short shipment received' : 'Short shipment out-scan'),
+      title: Text(received ? 'Short shipment received' : 'Short shipment out scan'),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -668,7 +668,7 @@ class _ShipmentCard extends ConsumerWidget {
             InfoRow('Sender', s.s('senderName')),
             InfoRow('Receiver', [s.s('receiverName'), s.s('receiverContact')].nonNulls.join(' · ')),
             InfoRow('Delivery branch', branches[s.deliveryBranchId]?.label),
-            InfoRow(mode == QuickScanMode.inScan ? 'THC' : 'Loading sheet', sheet?.number),
+            InfoRow('Manifest No', sheet?.number),
           ],
         ),
       ],
