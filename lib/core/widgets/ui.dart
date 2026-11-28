@@ -437,3 +437,30 @@ class TotalChip extends StatelessWidget {
     ),
   );
 }
+
+/// Tinted one-line notice with an icon.
+class InfoBanner extends StatelessWidget {
+  const InfoBanner({super.key, required this.icon, required this.text, this.color = AppColors.info});
+
+  final IconData icon;
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+    child: Row(
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 13),
+          ),
+        ),
+      ],
+    ),
+  );
+}

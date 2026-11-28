@@ -13,12 +13,15 @@ import '../../masters/data/masters.dart';
 import '../data/dashboard_repository.dart';
 import '../../shell/branch_header.dart';
 import '../../quick_scan/data/quick_scan_repository.dart';
+import '../../vendor/data/vendor_repository.dart';
+import '../../vendor/presentation/vendor_dashboard.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (ref.watch(isVendorProvider)) return const VendorDashboardPage();
     final counts = ref.watch(dashboardCountsProvider);
 
     Future<void> refresh() {

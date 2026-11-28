@@ -153,6 +153,7 @@ void main() {
   group('booking screen', () {
     late List<RequestOptions> creates;
     late List<RequestOptions> previews;
+    late List<RequestOptions> links;
 
     Future<FakeResponse> server(RequestOptions r, {required bool timeoutOnCreate, bool oldServer = false}) async {
       switch (r.path) {
@@ -245,6 +246,9 @@ void main() {
           );
         case '/api/v1/shipments/shp-1/charges':
           return (status: 200, body: ok({'freight': 420, 'netAmount': 531.5}));
+        case '/api/v1/pickups/pu-1/shipment':
+          links.add(r);
+          return (status: 200, body: ok({'id': 'pu-1'}));
         case '/api/v1/shipments/shp-1/history':
           return (status: 200, body: ok(<Object>[]));
         default:
@@ -260,6 +264,7 @@ void main() {
     }) async {
       creates = [];
       previews = [];
+      links = [];
       tester.view.physicalSize = const Size(400, 900);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -353,6 +358,26 @@ void main() {
 
       expect(creates, hasLength(1));
       expect(find.text('AWB123'), findsOneWidget);
+    });
+
+    testWidgets('booking a vendor pickup links the new shipment back to it', (tester) async {
+      final container = await openBooking(tester, timeoutOnCreate: false);
+      container.read(bookingDraftProvider.notifier).update((d) => d.copyWith(pickupId: 'pu-1', pickupNo: 'PU-1'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Booking pickup PU-1'), findsOneWidget);
+      await goToReview(tester);
+      await tester.ensureVisible(find.text('Confirm booking'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Confirm booking'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Book'));
+      await tester.pumpAndSettle();
+
+      expect(creates, hasLength(1));
+      expect(links.single.path, '/api/v1/pickups/pu-1/shipment');
+      expect(links.single.data, {'shipmentId': 'shp-1', 'shipmentNo': 'BK-1'});
+      expect(find.text('AWB123'), findsOneWidget);
+      expect(container.read(bookingDraftProvider).pickupId, isNull, reason: 'cleared with the draft');
     });
 
     testWidgets('timeout on booking warns about duplicates, keeps the draft, does not retry', (tester) async {

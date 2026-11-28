@@ -19,6 +19,8 @@ import '../data/booking_repository.dart';
 import '../data/party_text.dart';
 import 'photo_details.dart';
 import '../../shell/branch_header.dart';
+import '../../shipments/data/shipment_models.dart';
+import '../../vendor/data/vendor_repository.dart';
 
 /// Destination and packages first (one step) so charges show early; sender and
 /// receiver after that, then a summary to confirm.
@@ -154,6 +156,14 @@ class _BookingPageState extends ConsumerState<BookingPage> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        if (_draft.pickupNo case final no?)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: InfoBanner(
+                              icon: Icons.inventory_2_outlined,
+                              text: 'Booking pickup $no. It is marked booked once this shipment is created.',
+                            ),
+                          ),
                         _businessCustomerPicker(),
                         const SizedBox(height: 14),
                         _photoCard(),
@@ -1021,6 +1031,7 @@ class _SummaryStepState extends ConsumerState<_SummaryStep> {
     setState(() => _submitting = true);
     try {
       final shipment = await ref.read(bookingRepositoryProvider).create(d, branchId: branchId);
+      if (d.pickupId case final pickupId?) await _linkPickup(pickupId, d.pickupNo, shipment);
       ref.read(bookingDraftProvider.notifier).reset();
       ref.invalidate(branchWalletProvider);
       if (mounted) context.pushReplacement('/bookings/done/${shipment.id}');
@@ -1034,6 +1045,29 @@ class _SummaryStepState extends ConsumerState<_SummaryStep> {
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  /// A collected pickup moves to Booked once its shipment exists. The booking stands even
+  /// if this fails; the vendor is told to link it on the web.
+  Future<void> _linkPickup(String pickupId, String? pickupNo, ShipmentDetail shipment) async {
+    try {
+      await ref
+          .read(vendorRepositoryProvider)
+          .linkShipment(pickupId, shipmentId: shipment.id, shipmentNo: shipment.shipmentNumber);
+      ref.invalidate(pickupsProvider);
+    } on ApiException catch (e) {
+      if (mounted) {
+        showSubmitFailure(
+          context,
+          ApiException(
+            e.kind,
+            'The shipment is booked, but pickup ${pickupNo ?? ''} was not marked booked (${e.message}). '
+            'Link it from Pickup Requests on the web.',
+          ),
+          title: 'Pickup not linked',
+        );
+      }
     }
   }
 
