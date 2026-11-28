@@ -7,6 +7,7 @@ import '../../../core/auth/permissions.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/stat_card.dart';
 import '../../../core/widgets/state_views.dart';
+import '../../../core/widgets/ui.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../masters/data/masters.dart';
 import '../data/dashboard_repository.dart';
@@ -201,14 +202,7 @@ class _TodayBanner extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.primary, AppColors.indigo, AppColors.purple],
-        ),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(18), gradient: brandGradient),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
