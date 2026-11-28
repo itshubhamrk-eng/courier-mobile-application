@@ -210,7 +210,7 @@ class MetricTile extends StatelessWidget {
 
 /// Gradient header card used at the top of detail screens.
 class HeroCard extends StatelessWidget {
-  const HeroCard({super.key, required this.child, this.colors = const [AppColors.primary, AppColors.indigo]});
+  const HeroCard({super.key, required this.child, this.colors = const [Color(0xFFE02550), AppColors.primaryDark]});
 
   final Widget child;
   final List<Color> colors;
@@ -228,11 +228,12 @@ class HeroCard extends StatelessWidget {
   );
 }
 
-/// The app's signature gradient: blue through indigo to violet.
+/// The web app's crimson gradient (sidebar, logo, primary badges).
 const brandGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
-  colors: [AppColors.primary, AppColors.indigo, AppColors.purple],
+  colors: [Color(0xFFE02550), AppColors.primaryDark, Color(0xFF7A0E33)],
+  stops: [0, 0.55, 1],
 );
 
 /// Paints [brandGradient] behind an AppBar (`flexibleSpace`).

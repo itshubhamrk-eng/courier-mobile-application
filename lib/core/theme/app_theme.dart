@@ -1,38 +1,39 @@
 import 'package:flutter/material.dart';
 
-/// Blue-and-white logistics palette.
+/// Same palette as the web application (frontend/src/theme/_tokens.scss): crimson brand,
+/// indigo accent, cool grey page, one colour per status tone.
 class AppColors {
   const AppColors._();
 
-  static const primary = Color(0xFF1565C0);
-  static const primaryDark = Color(0xFF0D47A1);
-  static const primaryLight = Color(0xFFE3F0FF);
+  static const primary = Color(0xFFD61F45); // --brand-600
+  static const primaryDark = Color(0xFFB3123A); // --brand-700
+  static const primaryLight = Color(0xFFFFF1F4); // --brand-50
   static const surface = Colors.white;
-  static const background = Color(0xFFF5F8FC);
-  static const textPrimary = Color(0xFF1B2430);
-  static const textSecondary = Color(0xFF5B6675);
-  static const border = Color(0xFFDDE3EC);
+  static const background = Color(0xFFEDEFF3); // --page-bg
+  static const textPrimary = Color(0xFF1E2140); // --content-fg
+  static const textSecondary = Color(0xFF5D6285); // --content-muted
+  static const border = Color(0xFFE0E3EC); // --surface-border
 
-  /// Input and inset fill: a cool tint of the background, so fields read as wells
-  /// rather than outlined boxes.
-  static const field = Color(0xFFEFF3F9);
-  static const shadow = Color(0x1A1B3A6B);
+  /// Input and inset fill (--surface-muted), so fields read as wells.
+  static const field = Color(0xFFEEF0F5);
+  static const shadow = Color(0x140F172A);
 
-  static const success = Color(0xFF2E7D32);
-  static const warning = Color(0xFFB26A00);
-  static const danger = Color(0xFFC62828);
-  static const info = Color(0xFF0277BD);
-  static const neutral = Color(0xFF607D8B);
+  static const success = Color(0xFF16A34A);
+  // The web's #F59E0B is too light for text on white; this is the web charts' amber.
+  static const warning = Color(0xFFD97706);
+  static const danger = Color(0xFFDC2626);
+  static const info = Color(0xFF4338CA); // --accent / --info
+  static const neutral = Color(0xFF64748B);
 
-  // Dashboard palette: one colour per operation, so each stage is recognisable at a glance.
-  static const indigo = Color(0xFF3949AB);
-  static const purple = Color(0xFF8E24AA);
-  static const teal = Color(0xFF00897B);
-  static const orange = Color(0xFFF57C00);
-  static const amber = Color(0xFFFFA000);
-  static const cyan = Color(0xFF0288D1);
-  static const pink = Color(0xFFD81B60);
-  static const green = Color(0xFF2E7D32);
+  // Per-operation colours, taken from the web's tones so a stage looks the same on both.
+  static const indigo = Color(0xFF4338CA); // info / accent
+  static const purple = Color(0xFFB3123A); // brand strong
+  static const teal = Color(0xFF0D9488);
+  static const orange = Color(0xFFD97706); // warning
+  static const amber = Color(0xFFF59E0B);
+  static const cyan = Color(0xFF2563EB); // web chart blue
+  static const pink = Color(0xFFE23459); // brand-500
+  static const green = Color(0xFF16A34A); // success
 
   // Side menu: floating crimson panel. Labels are full white because 88% white fails
   // AA on the light top of the gradient; pressed/hover darkens for the same reason.
@@ -62,6 +63,7 @@ class AppTheme {
     final scheme = ColorScheme.fromSeed(
       seedColor: AppColors.primary,
       primary: AppColors.primary,
+      secondary: AppColors.info,
       surface: AppColors.surface,
       error: AppColors.danger,
     );
@@ -155,18 +157,18 @@ class AppTheme {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.surface,
-        indicatorColor: AppColors.indigo.withValues(alpha: 0.14),
+        indicatorColor: AppColors.primary.withValues(alpha: 0.14),
         elevation: 8,
         shadowColor: AppColors.shadow,
         surfaceTintColor: Colors.transparent,
         iconTheme: WidgetStateProperty.resolveWith(
-          (s) => IconThemeData(color: s.contains(WidgetState.selected) ? AppColors.indigo : AppColors.textSecondary),
+          (s) => IconThemeData(color: s.contains(WidgetState.selected) ? AppColors.primary : AppColors.textSecondary),
         ),
         labelTextStyle: WidgetStateProperty.resolveWith(
           (s) => TextStyle(
             fontSize: 12,
             fontWeight: s.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w500,
-            color: s.contains(WidgetState.selected) ? AppColors.indigo : AppColors.textSecondary,
+            color: s.contains(WidgetState.selected) ? AppColors.primary : AppColors.textSecondary,
           ),
         ),
       ),
