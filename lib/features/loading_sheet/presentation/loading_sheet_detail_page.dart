@@ -40,7 +40,7 @@ class LoadingSheetDetailPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         flexibleSpace: const AppBarGradient(),
-        title: Text(data.value?.sheet.number ?? 'Loading Sheet'),
+        title: Text(data.value?.sheet.number ?? 'Manifest'),
         actions: [
           if (data.value case final v?)
             PopupMenuButton<bool>(
@@ -48,13 +48,13 @@ class LoadingSheetDetailPage extends ConsumerWidget {
               icon: const Icon(Icons.print_outlined),
               onSelected: (asThc) => openDocument(
                 context,
-                title: '${asThc ? 'THC' : 'Loading sheet'} ${v.sheet.number}',
+                title: '${asThc ? 'Manifest Finalization' : 'Manifest'} ${v.sheet.number}',
                 fileName: '${asThc ? 'thc' : 'loading-sheet'}-${v.sheet.number}.pdf',
                 build: () => ref.read(documentServiceProvider).sheet(sheetId, asThc: asThc),
               ),
               itemBuilder: (_) => [
-                const PopupMenuItem(value: false, child: Text('Loading sheet')),
-                if (!v.sheet.isOpen) const PopupMenuItem(value: true, child: Text('THC')),
+                const PopupMenuItem(value: false, child: Text('Manifest')),
+                if (!v.sheet.isOpen) const PopupMenuItem(value: true, child: Text('Manifest Finalization')),
               ],
             ),
         ],
@@ -127,7 +127,7 @@ class LoadingSheetDetailPage extends ConsumerWidget {
                 FilledButton.icon(
                   onPressed: () => context.push('/thc?manifestId=${value.sheet.id}'),
                   icon: const Icon(Icons.local_shipping_outlined),
-                  label: const Text('Generate THC'),
+                  label: const Text('Finalize Manifest'),
                 ),
               ],
               const SizedBox(height: 16),

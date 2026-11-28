@@ -29,6 +29,8 @@ import 'features/wallet/presentation/topup_pages.dart';
 import 'features/wallet/presentation/wallet_page.dart';
 import 'features/wallet/presentation/wallet_recharge_page.dart';
 import 'features/wallet/presentation/wallet_transactions_page.dart';
+import 'features/vendor/presentation/earnings_page.dart';
+import 'features/vendor/presentation/pickups_page.dart';
 
 /// Screens that need a permission. The server checks every call anyway; this
 /// keeps users from landing on a screen whose actions would all be refused.
@@ -97,6 +99,9 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
+          StatefulShellBranch(
+            routes: [GoRoute(path: '/pickups', builder: (_, _) => const PickupsPage())],
+          ),
         ],
       ),
       // Quick-action targets, filled in by later phases.
@@ -146,6 +151,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/quick-scan/out',
         builder: (_, _) => const QuickScanPage(mode: QuickScanMode.outScan),
       ),
+      GoRoute(path: '/vendor/earnings', builder: (_, _) => const VendorEarningsPage()),
       GoRoute(path: '/wallet', builder: (_, _) => const WalletPage()),
       GoRoute(path: '/wallet/recharge', builder: (_, _) => const WalletRechargePage()),
       GoRoute(path: '/wallet/transactions', builder: (_, _) => const WalletTransactionsPage()),

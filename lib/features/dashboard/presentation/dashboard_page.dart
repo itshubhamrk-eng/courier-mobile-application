@@ -13,12 +13,15 @@ import '../../masters/data/masters.dart';
 import '../data/dashboard_repository.dart';
 import '../../shell/branch_header.dart';
 import '../../quick_scan/data/quick_scan_repository.dart';
+import '../../vendor/data/vendor_repository.dart';
+import '../../vendor/presentation/vendor_dashboard.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (ref.watch(isVendorProvider)) return const VendorDashboardPage();
     final counts = ref.watch(dashboardCountsProvider);
 
     Future<void> refresh() {
@@ -65,13 +68,13 @@ class _Body extends ConsumerWidget {
         const _QuickAction('Book Shipment', Icons.add_box_outlined, '/bookings/new', AppColors.primary),
       if (can(Permissions.shipmentRead)) const _QuickAction('Track Shipment', Icons.search, '/track', AppColors.cyan),
       if (scan.inScan)
-        const _QuickAction('Quick In-scan', Icons.move_to_inbox_outlined, '/quick-scan/in', AppColors.green),
+        const _QuickAction('Quick In Scan', Icons.move_to_inbox_outlined, '/quick-scan/in', AppColors.green),
       if (scan.outScan)
-        const _QuickAction('Quick Out-scan', Icons.outbox_outlined, '/quick-scan/out', AppColors.orange),
+        const _QuickAction('Quick Out Scan', Icons.outbox_outlined, '/quick-scan/out', AppColors.orange),
       if (can(Permissions.manifestCreate))
-        const _QuickAction('Loading Sheet', Icons.playlist_add_outlined, '/loading-sheets/new', AppColors.indigo),
+        const _QuickAction('Manifest Creation', Icons.playlist_add_outlined, '/loading-sheets/new', AppColors.indigo),
       if (can(Permissions.manifestDispatch))
-        const _QuickAction('Generate THC', Icons.local_shipping_outlined, '/thc', AppColors.teal),
+        const _QuickAction('Manifest Finalization', Icons.local_shipping_outlined, '/thc', AppColors.teal),
       if (can(Permissions.deliveryAssign))
         const _QuickAction('Generate DRS', Icons.assignment_outlined, '/drs/new', AppColors.purple),
       if (can(Permissions.deliveryUpload))
@@ -113,7 +116,7 @@ class _Body extends ConsumerWidget {
               onTap: () => open('/loading-sheets/new'),
             ),
             StatCard(
-              label: 'Loading sheets',
+              label: 'Open manifests',
               value: counts.loadingSheetsOpen,
               icon: Icons.list_alt_outlined,
               color: AppColors.indigo,
@@ -132,7 +135,7 @@ class _Body extends ConsumerWidget {
               onTap: () => open('/thc'),
             ),
             StatCard(
-              label: 'THC in transit',
+              label: 'Dispatched manifests',
               value: counts.thcInTransit,
               icon: Icons.local_shipping_outlined,
               color: AppColors.teal,

@@ -6,8 +6,8 @@ import '../theme/app_theme.dart';
 /// entry status). Unknown values are shown as sent, never guessed.
 ({String label, Color color}) statusStyle(String status) => switch (status) {
   'BOOKED' => (label: 'Booked', color: AppColors.info),
-  'READY_FOR_MANIFEST' => (label: 'Ready for Loading', color: AppColors.info),
-  'MANIFEST_CREATED' => (label: 'Loading Sheet Created', color: AppColors.primary),
+  'READY_FOR_MANIFEST' => (label: 'Ready for Manifest', color: AppColors.info),
+  'MANIFEST_CREATED' => (label: 'Manifest Created', color: AppColors.primary),
   'DISPATCHED' => (label: 'Dispatched', color: AppColors.primary),
   'IN_SCAN' => (label: 'Received', color: AppColors.primary),
   'OUT_FOR_DELIVERY' => (label: 'Out for Delivery', color: AppColors.warning),
@@ -22,6 +22,17 @@ import '../theme/app_theme.dart';
   'SHORT' => (label: 'Short Received', color: AppColors.danger),
   'RESOLVED' => (label: 'Exception Resolved', color: AppColors.success),
   'CREATED' => (label: 'Created', color: AppColors.info),
+  // Vendor pickups, earnings and statements.
+  'REQUESTED' => (label: 'Requested', color: AppColors.info),
+  'ASSIGNED' => (label: 'Assigned', color: AppColors.warning),
+  'ACCEPTED' => (label: 'Accepted', color: AppColors.info),
+  'OUT_FOR_PICKUP' => (label: 'Out for Pickup', color: AppColors.warning),
+  'PICKED_UP' => (label: 'Picked Up', color: AppColors.primary),
+  'ACCRUED' => (label: 'Earned', color: AppColors.success),
+  'UNRATED' => (label: 'No Rate', color: AppColors.warning),
+  'BILLED' => (label: 'Billed', color: AppColors.info),
+  'DRAFT' => (label: 'Draft', color: AppColors.neutral),
+  'PAID' => (label: 'Paid', color: AppColors.success),
   'COMPLETED' => (label: 'Completed', color: AppColors.success),
   // Wallet: recharge attempts, top-up requests, wallet state, bank settlement.
   'PENDING' => (label: 'Pending', color: AppColors.warning),

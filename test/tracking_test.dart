@@ -147,7 +147,7 @@ void main() {
     expect(scanCandidates('https://courier.skra.in/track/AL10041-002'), ['AL10041-002', 'AL10041']);
   });
 
-  test('view collects documents and every loading sheet / THC the shipment was on', () async {
+  test('view collects documents and every manifest / THC the shipment was on', () async {
     final adapter = FakeAdapter((r) async {
       return switch (r.path) {
         '/api/v1/shipments/s1/history' => (

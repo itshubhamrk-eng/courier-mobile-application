@@ -10,9 +10,18 @@ import '../auth/application/auth_controller.dart';
 import '../masters/data/masters.dart';
 import 'branch_header.dart';
 import '../wallet/application/wallet_state.dart';
+import '../vendor/data/vendor_repository.dart';
 
 class _Item {
-  const _Item(this.title, this.icon, this.route, {this.permission, this.tab = false, this.color = AppColors.primary});
+  const _Item(
+    this.title,
+    this.icon,
+    this.route, {
+    this.permission,
+    this.tab = false,
+    this.color = AppColors.primary,
+    this.vendor = true,
+  });
 
   final String title;
   final IconData icon;
@@ -22,6 +31,9 @@ class _Item {
 
   /// A bottom-bar tab: switched to with go(), not pushed.
   final bool tab;
+
+  /// Shown to a vendor login too. Vendors only collect and deliver (web: PARTNER_OPERATIONS).
+  final bool vendor;
 }
 
 /// Same items, names and order as the web app's Operations menu, filtered by permission.
@@ -43,22 +55,24 @@ const _operations = [
   ),
   _Item('Track Shipment', Icons.my_location, '/track', permission: Permissions.shipmentRead, color: AppColors.cyan),
   _Item(
-    'Loading Sheet',
+    'Manifest Creation',
     Icons.qr_code_scanner,
     '/loading-sheets',
     permission: Permissions.manifestRead,
     tab: true,
     color: AppColors.purple,
+    vendor: false,
   ),
   _Item(
-    'Trip Hire Challan (THC)',
+    'Manifest Finalization',
     Icons.outbound_outlined,
     '/thc',
     permission: Permissions.manifestDispatch,
     color: AppColors.teal,
+    vendor: false,
   ),
   _Item(
-    'In Scan',
+    'Manifest In Scan',
     Icons.move_to_inbox_outlined,
     '/delivery',
     permission: Permissions.manifestRead,
@@ -96,6 +110,7 @@ class AppDrawer extends ConsumerWidget {
     final location = GoRouterState.of(context).matchedLocation;
     bool can(String? p) => p == null || (session?.can(p) ?? false);
     final walletAccess = ref.watch(walletAccessProvider);
+    final vendor = ref.watch(isVendorProvider);
     final screen = MediaQuery.sizeOf(context).width;
     final panelWidth = (screen * 0.84).clamp(0.0, 288.0);
 
@@ -143,12 +158,27 @@ class AppDrawer extends ConsumerWidget {
                           active: location == '/home',
                           onTap: () => go('/home', tab: true),
                         ),
+                        if (vendor) ...[
+                          const _Heading('Vendor'),
+                          _Pill(
+                            title: 'Pickup Requests',
+                            icon: Icons.local_shipping_outlined,
+                            active: location == '/pickups',
+                            onTap: () => go('/pickups', tab: true),
+                          ),
+                          _Pill(
+                            title: 'Earnings & Billing',
+                            icon: Icons.payments_outlined,
+                            active: location == '/vendor/earnings',
+                            onTap: () => go('/vendor/earnings'),
+                          ),
+                        ],
                         const _Heading('Operations'),
-                        for (final item in _operations.where((i) => can(i.permission)))
+                        for (final item in _operations.where((i) => can(i.permission) && (!vendor || i.vendor)))
                           _Pill(
                             title: item.title,
                             icon: item.icon,
-                            active: item.tab && location == item.route && item.title != 'In Scan',
+                            active: item.tab && location == item.route && item.title != 'Manifest In Scan',
                             onTap: () => go(item.route, tab: item.tab),
                           ),
                         if (walletAccess.view) ...[

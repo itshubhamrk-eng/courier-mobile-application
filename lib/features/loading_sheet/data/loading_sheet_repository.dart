@@ -160,7 +160,7 @@ String? loadingIneligibility(
   required LoadingMode mode,
   String? destinationId,
 }) {
-  if (s.manifestId != null && !loadableStatuses.contains(s.status)) return 'Already on a loading sheet.';
+  if (s.manifestId != null && !loadableStatuses.contains(s.status)) return 'Already on a manifest.';
   if (!loadableStatuses.contains(s.status)) return 'Status is ${s.status.replaceAll('_', ' ').toLowerCase()}.';
   if (s.currentLocationId != branchId) return 'Not at your branch.';
   if (s.flowType != null && s.flowType != 'STANDARD') return 'Not a standard-flow shipment.';

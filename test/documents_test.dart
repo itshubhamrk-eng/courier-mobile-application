@@ -39,7 +39,7 @@ void main() {
     expect(pages(pdf), 3);
   });
 
-  test('loading sheet, THC, DRS and POD render', () async {
+  test('manifest, THC, DRS and POD render', () async {
     const rows = [
       SheetRow(
         shipmentNumber: 'PUN-1',

@@ -125,18 +125,18 @@ void main() {
     for (final (who, perms, out) in [('branch', _branchPerms, findsNothing), ('hub', _hubPerms, findsOneWidget)]) {
       testWidgets('dashboard quick actions for $who staff', (t) async {
         await pumpSignedInApp(t, (r) async => (status: 200, body: ok(<String, dynamic>{})), permissions: perms);
-        expect(find.text('Quick In-scan'), findsOneWidget);
-        expect(find.text('Quick Out-scan'), out, reason: 'the server allows out-scan to hub staff only');
+        expect(find.text('Quick In Scan'), findsOneWidget);
+        expect(find.text('Quick Out Scan'), out, reason: 'the server allows out scan to hub staff only');
       });
     }
 
-    testWidgets('scanning a label opens the shipment, counts it; all scanned in-scans without a popup', (t) async {
+    testWidgets('scanning a label opens the shipment, counts it; all scanned in scans without a popup', (t) async {
       await open(t, server(_shipment(qty: 2)), '/quick-scan/in');
       await type(t, 'AWB100-001');
       expect(find.text('1 / 2'), findsOneWidget);
       expect(find.text('2 packages'), findsOneWidget);
       await type(t, 'AWB100-002');
-      await submit(t, 'In-scan');
+      await submit(t, 'In Scan');
 
       expect(find.text('Short shipment received'), findsNothing);
       expect(inScans, hasLength(1));
@@ -146,10 +146,10 @@ void main() {
       expect(body['manifestNumber'], 'LS-1');
       expect(body['missingTrackingNumbers'], isEmpty);
       expect(body.containsKey('remarks'), isFalse);
-      expect(find.text('In-scan done'), findsOneWidget);
+      expect(find.text('In Scan done'), findsOneWidget);
     });
 
-    testWidgets('8 of 10: popup, note, and the shortage goes with the in-scan for branch staff', (t) async {
+    testWidgets('8 of 10: popup, note, and the shortage goes with the in scan for branch staff', (t) async {
       await open(
         t,
         server(
@@ -166,7 +166,7 @@ void main() {
         '/quick-scan/in',
       );
       await scanUpTo(t, 8);
-      await submit(t, 'In-scan');
+      await submit(t, 'In Scan');
       expect(find.text('Short shipment received'), findsOneWidget);
       expect(find.text('8 of 10 packages scanned.'), findsOneWidget);
       expect(find.text('Missing: package 9-10'), findsOneWidget);
@@ -176,23 +176,23 @@ void main() {
       await t.pumpAndSettle();
       expect(inScans, isEmpty);
 
-      await submit(t, 'In-scan');
+      await submit(t, 'In Scan');
       await t.enterText(find.byType(TextField).last, 'Torn bag');
-      await submit(t, 'In-scan short');
+      await submit(t, 'In Scan short');
 
       final body = inScans.single.data as Map;
       expect(body['missingTrackingNumbers'], ['AWB100-009', 'AWB100-010']);
       expect(body['remarks'], 'Short shipment received: 8 of 10. Missing package 9-10. Note: Torn bag');
       expect(exceptions, isEmpty, reason: 'no permission: the ticket covers it');
-      expect(find.text('In-scan done, short'), findsOneWidget);
+      expect(find.text('In Scan done, short'), findsOneWidget);
       expect(find.text('TKT-9'), findsOneWidget);
     });
 
-    testWidgets('hub staff: short in-scan records one SHORT exception, not a second ticket', (t) async {
+    testWidgets('hub staff: short in scan records one SHORT exception, not a second ticket', (t) async {
       await open(t, server(_shipment()), '/quick-scan/in', perms: _hubPerms);
       await scanUpTo(t, 3);
-      await submit(t, 'In-scan');
-      await submit(t, 'In-scan short');
+      await submit(t, 'In Scan');
+      await submit(t, 'In Scan short');
 
       expect((inScans.single.data as Map)['missingTrackingNumbers'], isEmpty);
       final body = exceptions.single.data as Map;
@@ -202,7 +202,7 @@ void main() {
       expect(find.text('Short exception recorded.'), findsOneWidget);
     });
 
-    testWidgets('short out-scan: popup, out-scan, exception; a failed note is retried without a second out-scan', (
+    testWidgets('short out scan: popup, out scan, exception; a failed note is retried without a second out scan', (
       t,
     ) async {
       await open(
@@ -212,9 +212,9 @@ void main() {
         perms: _hubPerms,
       );
       await scanUpTo(t, 8);
-      await submit(t, 'Out-scan');
-      expect(find.text('Short shipment out-scan'), findsOneWidget);
-      await submit(t, 'Out-scan short');
+      await submit(t, 'Out Scan');
+      expect(find.text('Short shipment out scan'), findsOneWidget);
+      await submit(t, 'Out Scan short');
 
       final body = outScans.single.data as Map;
       expect(body['manifestId'], 'm1');
@@ -229,7 +229,7 @@ void main() {
       expect(outScans, hasLength(1));
     });
 
-    testWidgets('a short out-scan needs the exception permission', (t) async {
+    testWidgets('a short out scan needs the exception permission', (t) async {
       await open(
         t,
         server(_shipment(status: 'MANIFEST_CREATED')),
@@ -237,9 +237,9 @@ void main() {
         perms: const [..._branchPerms, 'HUB_OUT_SCAN'],
       );
       await scanUpTo(t, 2);
-      await submit(t, 'Out-scan');
+      await submit(t, 'Out Scan');
       expect(outScans, isEmpty);
-      expect(find.textContaining('cannot record a short out-scan'), findsOneWidget);
+      expect(find.textContaining('cannot record a short out scan'), findsOneWidget);
     });
 
     testWidgets('server refusal is shown and the scans are kept', (t) async {
@@ -258,9 +258,9 @@ void main() {
         '/quick-scan/in',
       );
       await type(t, 'AWB100');
-      await submit(t, 'In-scan');
+      await submit(t, 'In Scan');
       expect(find.text('Receiving branch does not match.'), findsOneWidget);
-      expect(find.text('In-scan failed'), findsOneWidget);
+      expect(find.text('In Scan failed'), findsOneWidget);
       await t.tap(find.text('OK'));
       await t.pumpAndSettle();
       expect(find.text('1 / 1'), findsOneWidget);
@@ -270,10 +270,10 @@ void main() {
       await open(t, server(_shipment(status: 'IN_SCAN')), '/quick-scan/in');
       await type(t, 'PUN-26-1035');
       expect(find.textContaining('Only dispatched shipments can be received'), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, 'In-scan'), findsNothing);
+      expect(find.widgetWithText(FilledButton, 'In Scan'), findsNothing);
     });
 
-    testWidgets('shipment for another branch cannot be in-scanned', (t) async {
+    testWidgets('shipment for another branch cannot be in scanned', (t) async {
       await open(t, server(_shipment(next: 'branch-9')), '/quick-scan/in');
       await type(t, 'AWB100-001');
       expect(find.textContaining('not your branch'), findsOneWidget);

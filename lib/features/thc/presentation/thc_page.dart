@@ -32,17 +32,17 @@ class ThcPage extends ConsumerWidget {
     if (manifestId != null) return _ThcForm(manifestId: manifestId!);
     final open = ref.watch(loadingSheetsProvider('CREATED'));
     return Scaffold(
-      appBar: AppBar(flexibleSpace: const AppBarGradient(), title: const Text('Generate THC')),
+      appBar: AppBar(flexibleSpace: const AppBarGradient(), title: const Text('Manifest Finalization')),
       body: switch (open) {
         AsyncData(:final value) when value.isEmpty => const EmptyView(
-          message: 'No open loading sheets. Create a loading sheet first.',
+          message: 'No open manifests. Create a manifest first.',
         ),
         AsyncData(:final value) => ListView(
           padding: const EdgeInsets.all(16),
           children: [
             const Padding(
               padding: EdgeInsets.only(bottom: 10),
-              child: Text('Pick the loading sheet to dispatch', style: TextStyle(fontWeight: FontWeight.w700)),
+              child: Text('Pick the manifest to dispatch', style: TextStyle(fontWeight: FontWeight.w700)),
             ),
             for (final s in value)
               Padding(
@@ -111,7 +111,7 @@ class _ThcFormState extends ConsumerState<_ThcForm> {
         .where((s) => matchesScan(trackingNumber: s.trackingNumber, shipmentNumber: s.shipmentNumber, raw: awb))
         .firstOrNull;
     if (onSheet == null) {
-      showFailure(context, ApiException(ApiErrorKind.validation, '$awb is not on this loading sheet.'));
+      showFailure(context, ApiException(ApiErrorKind.validation, '$awb is not on this manifest.'));
       return;
     }
     if (_outScanned.contains(onSheet.id)) {
@@ -130,7 +130,7 @@ class _ThcFormState extends ConsumerState<_ThcForm> {
         setState(() => _outScanned.add(onSheet.id));
         showSuccess(context, '$awb scanned out.');
       } else {
-        showFailure(context, ApiException(ApiErrorKind.validation, r?.message ?? 'Out-scan failed for $awb.'));
+        showFailure(context, ApiException(ApiErrorKind.validation, r?.message ?? 'Out Scan failed for $awb.'));
       }
     } on ApiException catch (e) {
       if (mounted) showFailure(context, e);
@@ -209,7 +209,7 @@ class _ThcFormState extends ConsumerState<_ThcForm> {
     final missing = fromHub ? data.shipments.where((s) => !_outScanned.contains(s.id)).length : 0;
     final ok = await confirmAction(
       context,
-      title: 'Generate THC?',
+      title: 'Finalize manifest?',
       message: [
         '${data.sheet.number}: ${data.shipments.length} shipments will be dispatched.',
         if (missing > 0) '$missing not scanned out on this phone; the server will refuse if they were not scanned.',
@@ -241,7 +241,7 @@ class _ThcFormState extends ConsumerState<_ThcForm> {
       if (e.outcomeUnknown) {
         await _settleUnknown();
       } else {
-        showSubmitFailure(context, e, title: 'THC not generated', scene: ResultScene.outScan);
+        showSubmitFailure(context, e, title: 'Manifest not finalized', scene: ResultScene.outScan);
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -259,7 +259,10 @@ class _ThcFormState extends ConsumerState<_ThcForm> {
       }
       showSubmitFailure(
         context,
-        const ApiException(ApiErrorKind.timeout, 'THC was not generated (server timed out). You can try again.'),
+        const ApiException(
+          ApiErrorKind.timeout,
+          'The manifest was not finalized (server timed out). You can try again.',
+        ),
       );
     } on ApiException {
       if (!mounted) return;
@@ -268,7 +271,7 @@ class _ThcFormState extends ConsumerState<_ThcForm> {
         title: 'Not confirmed',
         const ApiException(
           ApiErrorKind.timeout,
-          'Could not confirm whether the THC was generated. Check the Dispatched tab before trying again.',
+          'Could not confirm whether the manifest was finalized. Check the Dispatched tab before trying again.',
         ),
       );
     }
@@ -280,7 +283,7 @@ class _ThcFormState extends ConsumerState<_ThcForm> {
     final branches = ref.watch(branchNamesProvider).value ?? const <String, Branch>{};
 
     return Scaffold(
-      appBar: AppBar(flexibleSpace: const AppBarGradient(), title: const Text('Generate THC')),
+      appBar: AppBar(flexibleSpace: const AppBarGradient(), title: const Text('Manifest Finalization')),
       body: switch (data) {
         AsyncData(:final value) when _result != null => _ResultView(result: _result!, sheet: value),
         AsyncData(:final value) when !value.sheet.isOpen => _AlreadyDispatched(manifestId: widget.manifestId),
@@ -316,7 +319,7 @@ class _ThcFormState extends ConsumerState<_ThcForm> {
             ),
           ),
           if (fromHub) ...[
-            const _Heading('Out-scan (required at hub)'),
+            const _Heading('Out Scan (required at hub)'),
             Text(
               '${_outScanned.length} of ${data.shipments.length} scanned on this phone',
               style: TextStyle(
@@ -441,7 +444,7 @@ class _ThcFormState extends ConsumerState<_ThcForm> {
                     child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                   )
                 : const Icon(Icons.receipt_long_outlined),
-            label: Text(_submitting ? 'Generating…' : 'Generate THC'),
+            label: Text(_submitting ? 'Finalizing…' : 'Finalize Manifest'),
           ),
           const SizedBox(height: 24),
         ],
@@ -502,7 +505,7 @@ class _ResultView extends ConsumerWidget {
         const ResultSceneView(ResultScene.outScan, ResultKind.success),
         const SizedBox(height: 26),
         const Text(
-          'THC generated',
+          'Manifest finalized',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
         ),
@@ -513,7 +516,7 @@ class _ResultView extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('THC number', style: TextStyle(color: AppColors.textSecondary)),
+                const Text('Manifest No', style: TextStyle(color: AppColors.textSecondary)),
                 SelectableText(result.number, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
                 const Divider(height: 24),
                 _kv('Status', result.status),
@@ -537,12 +540,12 @@ class _ResultView extends ConsumerWidget {
           style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
           onPressed: () => openDocument(
             context,
-            title: 'THC ${result.number}',
+            title: 'Manifest ${result.number}',
             fileName: 'thc-${result.number}.pdf',
             build: () => ref.read(documentServiceProvider).sheet(result.manifestId, asThc: true),
           ),
           icon: const Icon(Icons.print_outlined),
-          label: const Text('Print THC'),
+          label: const Text('Print Manifest Finalization'),
         ),
       ],
     );
@@ -585,7 +588,7 @@ class _AlreadyDispatched extends ConsumerWidget {
             width: double.infinity,
             color: AppColors.primaryLight,
             padding: const EdgeInsets.all(12),
-            child: const Text('This loading sheet already has a THC. A second one cannot be generated.'),
+            child: const Text('This manifest is already finalized. It cannot be finalized again.'),
           ),
           Expanded(
             child: _ResultView(result: value, sheet: detail),

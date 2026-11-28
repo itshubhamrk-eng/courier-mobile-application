@@ -43,6 +43,8 @@ class ItemDraft {
 /// screen does not lose it; cleared after a successful booking.
 class BookingDraft {
   const BookingDraft({
+    this.pickupId,
+    this.pickupNo,
     this.businessCustomerId,
     this.businessCustomerName,
     this.senderName = '',
@@ -76,6 +78,9 @@ class BookingDraft {
     this.insuranceApplicable = false,
   });
 
+  /// Set when booking a vendor's collected pickup: the new shipment is linked back to it.
+  final String? pickupId;
+  final String? pickupNo;
   final String? businessCustomerId;
   final String? businessCustomerName;
   final String senderName;
@@ -202,6 +207,8 @@ class BookingDraft {
   }
 
   BookingDraft copyWith({
+    Object? pickupId = _keep,
+    Object? pickupNo = _keep,
     Object? businessCustomerId = _keep,
     Object? businessCustomerName = _keep,
     String? senderName,
@@ -234,6 +241,8 @@ class BookingDraft {
     Object? appointmentDeliveryCharge = _keep,
     bool? insuranceApplicable,
   }) => BookingDraft(
+    pickupId: pickupId == _keep ? this.pickupId : pickupId as String?,
+    pickupNo: pickupNo == _keep ? this.pickupNo : pickupNo as String?,
     businessCustomerId: businessCustomerId == _keep ? this.businessCustomerId : businessCustomerId as String?,
     businessCustomerName: businessCustomerName == _keep ? this.businessCustomerName : businessCustomerName as String?,
     senderName: senderName ?? this.senderName,

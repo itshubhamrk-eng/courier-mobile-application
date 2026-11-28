@@ -46,7 +46,7 @@ class _ReceivePageState extends ConsumerState<ReceivePage> {
         .where((x) => matchesScan(trackingNumber: x.trackingNumber, shipmentNumber: x.shipmentNumber, raw: awb))
         .firstOrNull;
     if (s == null) {
-      showFailure(context, ApiException(ApiErrorKind.validation, '$awb is not on THC ${data.sheet.number}.'));
+      showFailure(context, ApiException(ApiErrorKind.validation, '$awb is not on manifest ${data.sheet.number}.'));
       return;
     }
     setState(() => _received.add(s.trackingNumber));

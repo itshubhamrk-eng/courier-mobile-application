@@ -160,7 +160,7 @@ class _NewLoadingSheetPageState extends ConsumerState<NewLoadingSheetPage> {
     final picked = _eligible.where((s) => _selected.contains(s.id)).toList();
     final ok = await confirmAction(
       context,
-      title: 'Create loading sheet?',
+      title: 'Create manifest?',
       message:
           '${picked.length} shipments to ${branches[dest]?.label ?? 'the selected branch'}.\n'
           'They will be reserved for this sheet.',
@@ -179,7 +179,7 @@ class _NewLoadingSheetPageState extends ConsumerState<NewLoadingSheetPage> {
             remarks: _remarks.text,
           );
       if (!mounted) return;
-      showSubmitSuccess(context, '${sheet.number} is ready.', title: 'Loading sheet created');
+      showSubmitSuccess(context, '${sheet.number} is ready.', title: 'Manifest created');
       context.pushReplacement('/loading-sheets/${sheet.id}');
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -190,8 +190,8 @@ class _NewLoadingSheetPageState extends ConsumerState<NewLoadingSheetPage> {
           builder: (context) => AlertDialog(
             title: const Text('Not confirmed'),
             content: const Text(
-              'The server did not answer in time. The loading sheet may have been created.\n\n'
-              'Check Open loading sheets before trying again.',
+              'The server did not answer in time. The manifest may have been created.\n\n'
+              'Check Open manifests before trying again.',
             ),
             actions: [
               FilledButton(
@@ -199,13 +199,13 @@ class _NewLoadingSheetPageState extends ConsumerState<NewLoadingSheetPage> {
                   Navigator.pop(context);
                   context.go('/loading-sheets');
                 },
-                child: const Text('Open loading sheets'),
+                child: const Text('Open manifests'),
               ),
             ],
           ),
         );
       } else {
-        showSubmitFailure(context, e, title: 'Loading sheet not created');
+        showSubmitFailure(context, e, title: 'Manifest not created');
         // Something changed on the server (e.g. another user loaded a shipment): refresh the list.
         await _setDestination(dest);
       }
@@ -232,7 +232,7 @@ class _NewLoadingSheetPageState extends ConsumerState<NewLoadingSheetPage> {
     }..sort((a, b) => a.label.compareTo(b.label));
 
     return Scaffold(
-      appBar: AppBar(flexibleSpace: const AppBarGradient(), title: const Text('New Loading Sheet')),
+      appBar: AppBar(flexibleSpace: const AppBarGradient(), title: const Text('Manifest Creation')),
       body: Column(
         children: [
           Expanded(
@@ -386,7 +386,7 @@ class _NewLoadingSheetPageState extends ConsumerState<NewLoadingSheetPage> {
                             child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                           )
                         : const Icon(Icons.playlist_add_check),
-                    label: Text(_submitting ? 'Creating…' : 'Create loading sheet'),
+                    label: Text(_submitting ? 'Creating…' : 'Create manifest'),
                   ),
                 ],
               ),

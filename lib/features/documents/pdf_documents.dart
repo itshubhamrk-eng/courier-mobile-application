@@ -336,7 +336,7 @@ Future<Uint8List> buildSheet({
   String? driver,
   Map<String, num?> expenses = const {},
 }) {
-  final doc = pw.Document(theme: theme, title: '${isThc ? 'THC' : 'Loading sheet'} $number');
+  final doc = pw.Document(theme: theme, title: '${isThc ? 'Manifest Finalization' : 'Manifest'} $number');
   final totalPkg = rows.fold<int>(0, (s, r) => s + (r.packages ?? 0));
   final totalKg = rows.fold<num>(0, (s, r) => s + (r.weight ?? 0));
   final totalToPay = rows.fold<num>(0, (s, r) => s + (r.toPayAmount ?? 0));
@@ -359,7 +359,7 @@ Future<Uint8List> buildSheet({
       pageFormat: PdfPageFormat.a4.landscape.copyWith(marginLeft: 24, marginRight: 24, marginTop: 24, marginBottom: 24),
       footer: (c) => _footer(c, generatedBy),
       build: (_) => [
-        _letterhead(letterhead, isThc ? 'TRIP HIRE CHALLAN' : 'LOADING SHEET', number),
+        _letterhead(letterhead, isThc ? 'MANIFEST FINALIZATION' : 'MANIFEST', number),
         _meta([
           ('From', fromLabel),
           ('To', toLabel),

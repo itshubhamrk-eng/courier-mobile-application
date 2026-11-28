@@ -257,15 +257,15 @@ class ShipmentViewBody extends ConsumerWidget {
           ),
         if (view.sheets.isNotEmpty || view.deliveryRun?.drsNumber != null)
           SectionCard(
-            title: 'Loading sheet, THC and DRS',
+            title: 'Manifest and DRS',
             icon: Icons.local_shipping_outlined,
             color: AppColors.teal,
             children: [
               for (final sh in view.sheets)
                 _LinkTile(
                   icon: sh.isOpen ? Icons.list_alt_outlined : Icons.local_shipping_outlined,
-                  // A dispatched loading sheet is the THC (same number, as on the web).
-                  title: '${sh.isOpen ? 'Loading sheet' : 'THC'} ${sh.number}',
+                  // A dispatched manifest is its finalization (same number, as on the web).
+                  title: '${sh.isOpen ? 'Manifest' : 'Manifest Finalization'} ${sh.number}',
                   subtitle: [
                     statusStyle(sh.status).label,
                     '${branch(sh.bookingBranchId) ?? '–'} → ${branch(sh.deliveryBranchId) ?? '–'}',

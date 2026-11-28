@@ -74,7 +74,7 @@ void main() {
     expect(find.text('12'), findsWidgets, reason: 'banner and bookings card');
     expect(find.text('Book Shipment'), findsOneWidget);
     expect(find.text('Track Shipment'), findsOneWidget);
-    expect(find.text('Generate THC'), findsNothing, reason: 'no MANIFEST_DISPATCH permission');
+    expect(find.text('Manifest Finalization'), findsNothing, reason: 'no MANIFEST_DISPATCH permission');
   });
 
   testWidgets('dashboard fits a small phone with large text', (tester) async {
@@ -123,7 +123,7 @@ void main() {
   });
 
   test('status labels follow server values and do not guess unknown ones', () {
-    expect(statusStyle('MANIFEST_CREATED').label, 'Loading Sheet Created');
+    expect(statusStyle('MANIFEST_CREATED').label, 'Manifest Created');
     expect(statusStyle('SOMETHING_NEW').label, 'SOMETHING_NEW');
   });
 
